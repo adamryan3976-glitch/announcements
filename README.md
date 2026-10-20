@@ -72,6 +72,14 @@ clasp push
 ```
 Then Deploy → Manage deployments → edit the existing deployment → Version: New version. This keeps the same URL.
 
+## The announcements.winchesterps.ca address
+Google doesn't allow a custom domain on an Apps Script web app. So GitHub Pages serves `index.html` at announcements.winchesterps.ca, and that page shows the web app full screen in a frame.
+- **DNS:** a CNAME record `announcements` → `adamryan3976-glitch.github.io`.
+- **GitHub:** Settings → Pages: Source "Deploy from a branch", `main` / root. Custom domain announcements.winchesterps.ca, with **Enforce HTTPS** on.
+- **If the web app URL changes** (a brand-new deployment, not a new version), update the `href` of `#go` in `index.html`.
+- **If someone isn't signed in to Google, or their browser blocks sign-in inside frames** (Safari sometimes does), the frame stays blank or shows an error. The small "Trouble loading? Open directly" link in the bottom corner opens the app in the whole tab.
+- `?view=` is passed through, so announcements.winchesterps.ca/?view=new opens the new announcement form.
+
 ## Birthdays
 Export the class list from the LMS as Excel, including student name and birth date columns. Then go to Admin → Birthdays → choose the file → **Check the file**. Look over the preview, then click **Replace the birthday list**. Name columns are found automatically: "First name", "Last name", "Preferred name", "Student name", "Birth date", "DOB" and similar (a preferred name is used when there is one). Birthdays on weekends or other days without a cycle day show on the next school day.
 
@@ -90,5 +98,6 @@ This uses sample data in `preview/mock.html`; nothing connects to Google.
 - `apps-script/Auth.js`: who is signed in and what they can do.
 - `apps-script/Setup.js`: one-time setup and repair.
 - `apps-script/Index.html`, `Styles.html`, `App.html`: the page.
-- `index.html`: GitHub Pages launcher. Gives the site its Knights favicon and home-screen icon, then opens the web app.
+- `index.html`: the page at announcements.winchesterps.ca (GitHub Pages). Shows the web app full screen so the address stays on the school domain, and gives the site its Knights favicon and home-screen icon. Opened from a home-screen icon, it goes straight to the app.
+- `CNAME`: the custom domain for GitHub Pages.
 - `icons/`, `manifest.webmanifest`: favicon, app and home-screen icons.
