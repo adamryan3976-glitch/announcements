@@ -45,7 +45,7 @@ var SETTING_DEFAULTS = {
   admins: '',
   staffEmailPattern: '',
   photoFolderId: '',
-  logoUrl: '',
+  logoUrl: 'https://raw.githubusercontent.com/adamryan3976-glitch/announcements/main/icons/logo-512.png',
   landAcknowledgement: '',
   oCanadaVideoUrl: '',
   openingSlidesUrl: 'https://docs.google.com/presentation/d/1Lqx9RY1sD-BVpJ2YF116hvLJPAls3pqaVOrp7pr6FJw/present',

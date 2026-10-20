@@ -10,6 +10,7 @@ function doGet(e) {
   t.initialView = (e && e.parameter && e.parameter.view) || '';
   return t.evaluate()
     .setTitle(settings_().siteTitle || 'Announcements')
+    .setFaviconUrl('https://raw.githubusercontent.com/adamryan3976-glitch/announcements/main/icons/favicon-32.png')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // lets the Google Site embed it
 }
