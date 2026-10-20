@@ -1,0 +1,5 @@
+.clasp.json
+apps-script/.clasp.json
+.clasprc.json
+node_modules/
+preview/index.html
