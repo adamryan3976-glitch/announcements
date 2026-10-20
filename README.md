@@ -75,6 +75,14 @@ Then Deploy → Manage deployments → edit the existing deployment → Version:
 ## Birthdays
 Export the class list from the LMS as Excel, including student name and birth date columns. Then go to Admin → Birthdays → choose the file → **Check the file**. Look over the preview, then click **Replace the birthday list**. Name columns are found automatically: "First name", "Last name", "Preferred name", "Student name", "Birth date", "DOB" and similar (a preferred name is used when there is one). Birthdays on weekends or other days without a cycle day show on the next school day.
 
+## Web address (announcements.winchesterps.ca)
+GitHub Pages serves `index.html` at **announcements.winchesterps.ca**. The page shows the Google web app full-screen, so the address bar keeps the school's address. The `CNAME` file holds the domain.
+
+- **Setup:** DNS for winchesterps.ca needs a CNAME record from `announcements` to `adamryan3976-glitch.github.io`. In the repo's Settings → Pages, turn on **Enforce HTTPS**.
+- **Changing the web app:** if you ever make a *new* deployment (rather than a new version of the existing one), its address changes. Update `APP_URL` in `index.html`.
+- **Opening a page directly:** `?view=new` and the like are passed through, e.g. `announcements.winchesterps.ca/?view=new` opens the new-announcement form.
+- **"Not loading? Open directly":** Google won't show its sign-in screen inside another page, and Safari can block sign-in there. Anyone who sees a blank page or keeps being asked to sign in can tap the button in the corner to open the app on Google's own address.
+
 ## Previewing the design locally
 ```bash
 python3 preview/build.py
