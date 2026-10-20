@@ -28,7 +28,7 @@
     getAnnouncement: function (id) { return anns.filter(function (a) { return a.id === id; })[0]; },
     saveAnnouncement: function () { return { saved: true, id: 'x' }; },
     getPhoto: function () { return photo; },
-    listStaff: function () { return [{ email: 'new.teacher@ddsb.ca', name: 'Ms. Singh', status: 'pending' }, { email: 'kerr@ddsb.ca', name: 'Mrs. Kerr', status: 'active' }, { email: 'beaton@ddsb.ca', name: 'Mr. Beaton', status: 'active' }]; },
+    listStaff: function () { return [{ email: 'old.teacher@ddsb.ca', name: 'Ms. Singh', status: 'removed' }, { email: 'kerr@ddsb.ca', name: 'Mrs. Kerr', status: 'active' }, { email: 'beaton@ddsb.ca', name: 'Mr. Beaton', status: 'active' }]; },
     listAdmins: function () { return { admins: ['me@ddsb.ca'], owner: 'me@ddsb.ca' }; },
     birthdayStatus: function () { return { count: 412, updated: plus(-40) }; },
     getSettingsForAdmin: function () { return server.getBootstrap().settings; },

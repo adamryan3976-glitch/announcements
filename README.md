@@ -18,10 +18,12 @@ It is a Google Apps Script web app bound to the **Winchester Announcements Sheet
 Students only ever see Today and Present. Staff-only notes never reach a student's browser.
 
 ### Who is staff?
-- Everyone who has posted through the old Google Form is added as staff by setup.
-- An admin can add people on the Staff tab.
-- Anyone else at ddsb.ca who is signed in sees a "Staff? Get access to post" link; their request waits on Admin until approved.
-- Optionally, set **Treat these emails as staff** in Settings to a pattern that only matches staff addresses.
+The site goes by the email address people are signed in with:
+- **@ddsb.ca** accounts are staff and can post.
+- **@ddsbstudent.ca** accounts are students and see Today and Present only.
+- Accounts from anywhere else are turned away.
+
+An admin can stop a particular staff account from posting on Admin → Staff. The domains can be changed in Admin → Settings.
 
 The sheet owner is always an admin and can invite more admins.
 
@@ -30,7 +32,7 @@ The sheet owner is always an admin and can invite more admins.
 Setup adds these and leaves the existing tabs in place:
 
 - **Announcements**: one row per announcement. Dates are stored as text (`2026-10-20`) so they can't drift. Deleting from the site marks a row `deleted` rather than removing it.
-- **Staff**: email, name, status (`active` / `pending` / `removed`).
+- **Staff**: staff who have posted, with the name they use and a status (`active` / `removed`).
 - **Settings**: key/value pairs, edited from Admin → Settings.
 - **Birthdays**: name shown as "First L.", month, day, grade, homeroom. No birth years are stored.
 - **Cycle Days** and **Character Ed** are read as they are today.
@@ -59,6 +61,7 @@ Do this on a **copy** of the sheet first and try it for a few days.
 6. **Deploy**: in the Apps Script editor, Deploy → New deployment → Web app.
    - Execute as: **Me**
    - Who has access: **Anyone within DDSB**
+   - **Then check it with a student account.** If ddsbstudent.ca is part of the same Google Workspace as ddsb.ca, students will see Today and you're done. If a student gets "You need access", ddsbstudent.ca is a separate Workspace. In that case, change the setting to **Anyone with a Google account**. Staff are still recognised and need nothing extra. The catch is that Google doesn't tell the script who students from the other Workspace are, so it can't tell them apart from someone signed in with a personal Gmail. Anyone with the link who is signed in to Google could then see Today, including the birthday names (first name and last initial). Staff pages and staff-only notes stay protected either way.
 7. **Add the site details**: open the web app URL → Admin → Settings. Paste the Knights logo link and the Land Acknowledgement text, and the O Canada video link if you want it in Present mode.
 8. **Embed it in the Google Site**: on the Today page, Insert → Embed → By URL, then paste the web app URL. You can also link the URL straight from classroom bookmarks.
 
