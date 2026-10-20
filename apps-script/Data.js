@@ -160,7 +160,7 @@ function birthdaysFor_(dateStr) {
 
 /** Everything the page needs on first load. */
 function getBootstrap() {
-  var me = whoAmI_();
+  var me = requireViewer_();
   var s = settings_();
   return {
     me: me,
@@ -183,7 +183,7 @@ function getBootstrap() {
 
 /** Today's announcements for the signed-in user. */
 function getToday(dateStr) {
-  var me = whoAmI_();
+  var me = requireViewer_();
   var isStaff = me.role === 'staff' || me.role === 'admin';
   var date = (isStaff && dateStr) ? toDateStr_(dateStr) || todayStr_() : todayStr_();
   var active = sortForDisplay_(allAnnouncements_().filter(function (a) { return isActiveOn_(a, date); }));
@@ -359,9 +359,11 @@ function deleteAnnouncement(id) {
 
 /** Saves the display name a staff member uses so it is filled in next time. */
 function rememberName_(me, name) {
-  if (!name || !me.email) return;
+  if (!me.email) return;
   var row = staffRow_(me.email);
-  if (row && String(row.name) !== name) {
+  if (!row) {
+    sheet_(SHEETS.staff, STAFF_COLS).appendRow([me.email, name || '', 'active', 'first post', new Date()]);
+  } else if (name && String(row.name) !== name) {
     sheet_(SHEETS.staff, STAFF_COLS).getRange(row._row, STAFF_COLS.indexOf('name') + 1).setValue(name);
   }
 }

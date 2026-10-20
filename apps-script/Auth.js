@@ -2,8 +2,12 @@
  * Who is using the app and what they may do.
  *
  *   admin   — listed in Settings "admins" (the script owner is always admin)
- *   staff   — active row in the Staff tab, or matches Settings "staffEmailPattern"
- *   viewer  — everyone else signed in to the domain (students): Today page only
+ *   staff   — any @ddsb.ca account (Settings "staffDomain"), unless an admin
+ *             has removed them on the Staff tab
+ *   viewer  — @ddsbstudent.ca accounts (Settings "studentDomain"): Today only.
+ *             Also anyone whose email Google doesn't share with the script,
+ *             which happens for accounts outside the owner's domain.
+ *   none    — a signed-in account from any other domain: nothing
  */
 
 function currentEmail_() {
@@ -31,22 +35,26 @@ function staffRow_(email) {
 /** Role and display name for the current user. */
 function whoAmI_() {
   var email = currentEmail_();
-  var role = 'viewer';
-  var name = '';
+  var s = settings_();
+  var domain = email.split('@')[1] || '';
+  var staffDomain = String(s.staffDomain || 'ddsb.ca').toLowerCase().trim();
+  var studentDomain = String(s.studentDomain || 'ddsbstudent.ca').toLowerCase().trim();
   var row = staffRow_(email);
-  if (row && row.name) name = String(row.name);
-  if (email && adminList_().indexOf(email) !== -1) {
-    role = 'admin';
-  } else if (row && String(row.status).toLowerCase() === 'active') {
-    role = 'staff';
-  } else {
-    var pattern = settings_().staffEmailPattern;
-    if (email && pattern) {
-      try { if (new RegExp(pattern, 'i').test(email)) role = 'staff'; } catch (e) { /* bad pattern: ignore */ }
-    }
-  }
-  var pending = !!(row && String(row.status).toLowerCase() === 'pending');
-  return { email: email, role: role, name: name || guessName_(email), pending: pending };
+  var removed = !!(row && String(row.status).toLowerCase() === 'removed');
+  var role;
+  if (email && adminList_().indexOf(email) !== -1) role = 'admin';
+  else if (domain === staffDomain) role = removed ? 'viewer' : 'staff';
+  else if (!email || domain === studentDomain) role = 'viewer';
+  else role = 'none';
+  var name = row && row.name ? String(row.name) : '';
+  return { email: email, role: role, name: name || guessName_(email) };
+}
+
+/** Anyone from the school board may see Today; other accounts may not. */
+function requireViewer_() {
+  var me = whoAmI_();
+  if (me.role === 'none') throw new Error('Please sign in with your DDSB school account to see the announcements.');
+  return me;
 }
 
 function guessName_(email) {
