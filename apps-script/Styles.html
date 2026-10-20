@@ -241,6 +241,7 @@
   .present { position: fixed; inset: 0; background: var(--navy); color: #fff; z-index: 40; display: grid; grid-template-rows: auto 1fr auto; }
   .present-bar { display: flex; justify-content: space-between; align-items: center; padding: .8rem 1.5rem; color: #C9CEDB; }
   .present-controls { display: flex; gap: .5rem; }
+  .present-btn:disabled { opacity: .35; cursor: default; }
   .present-btn { background: transparent; border: 2px solid #46557C; color: #fff; border-radius: 999px; padding: .4rem 1rem; font-weight: 700; cursor: pointer; }
   .present-btn:hover { border-color: var(--gold); }
   .present-stage { padding: 1rem clamp(1.5rem, 6vw, 6rem) 2rem; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-height: 0; cursor: pointer; }
@@ -250,7 +251,21 @@
   .slide-body { margin: 0; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
   .slide-meta { font-size: .5em; color: #C9CEDB; }
   .slide-photos { display: flex; gap: .4em; flex-wrap: wrap; }
-  .slide-photos img { height: 6em; max-width: 100%; border-radius: 8px; object-fit: cover; }
+  .slide-photos img { display: block; height: 6em; max-width: 100%; border-radius: 8px; object-fit: cover; }
+  .slide-photo { padding: 0; border: 0; background: none; border-radius: 8px; cursor: zoom-in; line-height: 0; }
+  .slide-photo:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+  /* A photo opened full screen from a slide. */
+  .zoom {
+    position: absolute; inset: 0; z-index: 5; background: #000;
+    display: flex; align-items: center; justify-content: center; cursor: zoom-out;
+  }
+  .zoom-img { width: 100%; height: 100%; object-fit: contain; }
+  .zoom-bar {
+    position: absolute; top: 0; left: 0; right: 0; padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(rgba(0,0,0,.55), transparent); color: #fff;
+  }
   .slide-video { aspect-ratio: 16 / 9; height: 9em; max-width: 100%; }
   .slide-video iframe { width: 100%; height: 100%; border: 0; border-radius: 8px; }
   .slide-link { font-size: .5em; color: var(--gold); }

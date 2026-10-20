@@ -6,7 +6,7 @@
   var t = iso(today), plus = function (n) { var d = new Date(today); d.setDate(d.getDate() + n); return iso(d); };
   var anns = [
     { id: 'a1', title: 'Pizza lunch order forms due Friday', body: 'Please send your pizza lunch order forms back by Friday. Order online at https://schoolcashonline.com', grades: ['all'], important: true, startDate: t, endDate: plus(3), authorName: 'Mrs. Kerr', authorEmail: 'me@ddsb.ca', linkUrl: 'https://schoolcashonline.com', linkLabel: 'Order on School Cash Online', photoIds: [], daysOfWeek: [] },
-    { id: 'a2', title: 'Cross-country practice', body: 'Runners meet at the back doors at the first bell of lunch. Bring water and running shoes.', grades: ['4-6', '7-8'], startDate: plus(-2), endDate: plus(4), authorName: 'Mr. Beaton', photoIds: ['p1'], daysOfWeek: ['Tue', 'Thu'] },
+    { id: 'a2', title: 'Cross-country practice', body: 'Runners meet at the back doors at the first bell of lunch. Bring water and running shoes.', grades: ['4-6', '7-8'], startDate: plus(-2), endDate: plus(4), authorName: 'Mr. Beaton', photoIds: ['p1', 'p2'], daysOfWeek: ['Tue', 'Thu'] },
     { id: 'a3', title: '', body: 'Library books are due back this week so we can get ready for the book fair.', grades: ['1-3'], startDate: t, endDate: t, authorName: 'Ms. Paulino', photoIds: [], daysOfWeek: [] },
     { id: 'a4', title: 'Student council video', body: 'Watch the student council candidates’ speeches in class today.', grades: ['7-8'], startDate: t, endDate: t, authorName: 'Mr. Adams', authorEmail: 'me@ddsb.ca', videoUrl: 'https://youtu.be/dQw4w9WgXcQ', videoEmbed: 'about:blank', photoIds: [], daysOfWeek: [] }
   ];
