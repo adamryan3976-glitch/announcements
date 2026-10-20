@@ -1,0 +1,1001 @@
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+   * State and small helpers
+   * ========================================================= */
+  var state = {
+    me: null, settings: null, grades: [], today: null, appUrl: '',
+    view: 'today', viewArg: '', filter: store('grade') || 'all',
+    previewDate: '', refreshTimer: null, adminTab: 'staff', mineTab: 'current'
+  };
+  var DAYS = [['Mon', 'Mon'], ['Tue', 'Tue'], ['Wed', 'Wed'], ['Thu', 'Thu'], ['Fri', 'Fri']];
+  var GRADE_LABEL = { 'all': 'All Grades', '1-3': 'Grades 1–3', '4-6': 'Grades 4–6', '7-8': 'Grades 7–8' };
+  var view = document.getElementById('view');
+
+  function store(key, value) {
+    try {
+      if (value === undefined) return window.localStorage.getItem('wps-' + key);
+      window.localStorage.setItem('wps-' + key, value);
+    } catch (e) { return null; }
+  }
+
+  /** Element builder. Text is always set as text, never as HTML. */
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === 'class') el.className = v;
+        else if (k === 'text') el.textContent = v;
+        else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+        else if (k === 'value') el.value = v;
+        else if (k === 'checked') el.checked = !!v;
+        else el.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, kid) {
+    if (kid === null || kid === undefined || kid === false) return;
+    if (Array.isArray(kid)) { kid.forEach(function (k) { append(el, k); }); return; }
+    el.appendChild(typeof kid === 'string' || typeof kid === 'number' ? document.createTextNode(String(kid)) : kid);
+  }
+  function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+
+  /** google.script.run as a promise. */
+  function api(name) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resolve, reject) {
+      var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(function (err) {
+        reject(new Error(err && err.message ? err.message.replace(/^Exception: /, '') : String(err)));
+      });
+      runner[name].apply(runner, args);
+    });
+  }
+
+  var toastTimer;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
+  }
+
+  function isStaff() { return state.me && (state.me.role === 'staff' || state.me.role === 'admin'); }
+  function isAdmin() { return state.me && state.me.role === 'admin'; }
+
+  function parseDate(s) { var p = String(s).split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function todayIso() { return iso(new Date()); }
+  function longDate(s) { return parseDate(s).toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }); }
+  function shortDate(s) { return parseDate(s).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }); }
+  function addDays(s, n) { var d = parseDate(s); d.setDate(d.getDate() + n); return iso(d); }
+  function dateRange(a) {
+    if (!a.startDate) return '';
+    var s = a.startDate === a.endDate ? shortDate(a.startDate) : shortDate(a.startDate) + ' to ' + shortDate(a.endDate);
+    if (a.daysOfWeek && a.daysOfWeek.length) s += ' (' + a.daysOfWeek.join(', ') + ' only)';
+    return s;
+  }
+  function gradeText(codes) { return (codes || []).map(function (c) { return GRADE_LABEL[c] || c; }).join(', '); }
+
+  /** Splits text into text nodes and safe links. */
+  function linkify(text) {
+    var out = [], re = /(https?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)])/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push(text.slice(last, m.index));
+      out.push(h('a', { href: m[1], target: '_blank', rel: 'noopener', text: m[1] }));
+      last = m.index + m[1].length;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+
+  /* ---------- Photos load through the server so sharing rules never get in the way ---------- */
+  var photoCache = {};
+  function photoSrc(id) {
+    if (!photoCache[id]) photoCache[id] = api('getPhoto', id);
+    return photoCache[id];
+  }
+  function photoImg(id, cls) {
+    var img = h('img', { alt: 'Photo', class: cls || '', loading: 'lazy' });
+    photoSrc(id).then(function (src) { img.src = src; }).catch(function () { img.alt = 'Photo unavailable'; });
+    return img;
+  }
+
+  function videoEmbed(url) {
+    if (!url) return '';
+    var m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/i);
+    if (m) return 'https://www.youtube-nocookie.com/embed/' + m[1];
+    m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/i);
+    if (m) return 'https://drive.google.com/file/d/' + m[1] + '/preview';
+    return '';
+  }
+
+  /* =========================================================
+   * Announcement card (used on Today and in the editor preview)
+   * ========================================================= */
+  function card(a, opts) {
+    opts = opts || {};
+    var media = [];
+    if (a.photoIds && a.photoIds.length) {
+      media.push(h('div', { class: 'ann-photos' }, a.photoIds.map(function (id) {
+        return opts.localPhotos && opts.localPhotos[id] ? h('img', { src: opts.localPhotos[id], alt: 'Photo' }) : photoImg(id);
+      })));
+    }
+    var embed = a.videoEmbed || videoEmbed(a.videoUrl);
+    if (embed) {
+      media.push(h('div', { class: 'ann-video' }, h('iframe', {
+        src: embed, title: 'Video', allow: 'encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, loading: 'lazy'
+      })));
+    }
+    if (a.linkUrl) {
+      media.push(h('a', { class: 'btn small ann-link', href: a.linkUrl, target: '_blank', rel: 'noopener', text: a.linkLabel || 'Open link' }));
+    }
+    return h('article', { class: 'ann' + (a.important ? ' important' : '') },
+      a.important ? h('span', { class: 'ann-flag', text: 'Important' }) : null,
+      a.title ? h('h3', { text: a.title }) : null,
+      h('p', { class: 'ann-body' }, linkify(a.body || '')),
+      media.length ? h('div', { class: 'ann-media' }, media) : null,
+      opts.meta !== false && a.authorName ? h('div', { class: 'ann-meta' }, h('span', { text: 'From ' + a.authorName })) : null
+    );
+  }
+
+  /* =========================================================
+   * Navigation
+   * ========================================================= */
+  var VIEWS = {
+    today: { label: 'Today', render: renderToday },
+    new: { label: 'New announcement', render: renderEditor, staff: true },
+    edit: { render: renderEditor, staff: true },
+    mine: { label: 'My announcements', render: renderMine, staff: true },
+    all: { label: 'All announcements', render: renderArchive, staff: true },
+    admin: { label: 'Admin', render: renderAdmin, admin: true },
+    access: { render: renderAccess }
+  };
+
+  function renderNav() {
+    var nav = clear(document.getElementById('nav'));
+    ['today', 'new', 'mine', 'all', 'admin'].forEach(function (key) {
+      var v = VIEWS[key];
+      if (v.staff && !isStaff()) return;
+      if (v.admin && !isAdmin()) return;
+      var current = state.view === key || (key === 'new' && state.view === 'edit');
+      nav.appendChild(h('a', {
+        href: '#' + key, 'aria-current': current ? 'page' : null,
+        onclick: function (e) { e.preventDefault(); go(key); }
+      }, v.label, key === 'admin' && state.pendingCount ? h('span', { class: 'badge', text: state.pendingCount }) : null));
+    });
+  }
+
+  function go(key, arg, opts) {
+    if (!VIEWS[key]) key = 'today';
+    if ((VIEWS[key].staff && !isStaff()) || (VIEWS[key].admin && !isAdmin())) key = 'today';
+    state.view = key;
+    state.viewArg = arg || '';
+    if (!(opts && opts.noHistory) && window.google && google.script && google.script.history) {
+      google.script.history.push({ view: key, arg: state.viewArg }, null, key + (state.viewArg ? '/' + state.viewArg : ''));
+    }
+    renderNav();
+    clear(view);
+    VIEWS[key].render(state.viewArg, opts && opts.data);
+    view.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }
+
+  function pageHead(title, sub, actions) {
+    return h('div', { class: 'page-head' },
+      h('div', null, h('h1', { text: title }), sub ? h('p', { text: sub }) : null),
+      actions ? h('div', { class: 'day-actions' }, actions) : null);
+  }
+
+  function showError(where, err) {
+    clear(where).appendChild(h('p', { class: 'error', text: err.message || String(err) }));
+  }
+
+  /* =========================================================
+   * Today
+   * ========================================================= */
+  function shield(cycleDay) {
+    var svg = '<svg viewBox="0 0 92 104" aria-hidden="true"><path d="M46 3 L88 14 V50 C88 76 70 93 46 101 C22 93 4 76 4 50 V14 Z" fill="#C99A2E" stroke="#14213D" stroke-width="3"/><path d="M46 11 L80 20 V50 C80 71 66 85 46 92 C26 85 12 71 12 50 V20 Z" fill="none" stroke="#14213D" stroke-opacity=".35" stroke-width="1.5"/></svg>';
+    var wrap = h('div', { class: 'shield' + (cycleDay ? '' : ' no-school'), role: 'img', 'aria-label': cycleDay ? 'Day ' + cycleDay : 'No cycle day' });
+    wrap.innerHTML = svg; // static markup only
+    wrap.appendChild(cycleDay
+      ? h('div', { class: 'shield-text' }, h('small', { text: 'Day' }), h('strong', { text: cycleDay }))
+      : h('div', { class: 'shield-text' }, h('strong', { text: 'No cycle' })));
+    return wrap;
+  }
+
+  function groupedAnnouncements(t, filter) {
+    var groups = [];
+    state.grades.forEach(function (g) {
+      if (filter !== 'all' && g.code !== 'all' && g.code !== filter) return;
+      var items = t.announcements.filter(function (a) { return a.grades.indexOf(g.code) !== -1; });
+      groups.push({ code: g.code, label: g.label, items: items });
+    });
+    return groups;
+  }
+
+  function renderToday() {
+    var t = state.today;
+    if (!t) { view.appendChild(h('p', { class: 'loading', text: 'Loading…' })); return; }
+    var s = state.settings;
+
+    var actions = [
+      h('button', { class: 'btn gold', type: 'button', onclick: function () { openPresent(0); } }, 'Present to class')
+    ];
+    if (isStaff()) {
+      actions.push(h('button', { class: 'btn primary', type: 'button', onclick: function () { go('new'); } }, 'New announcement'));
+    }
+
+    var sub = t.isToday ? (t.cycleDay ? 'Cycle day ' + t.cycleDay : 'No cycle day today') : 'Previewing another day';
+    var dayline = h('section', { class: 'dayline', 'aria-label': 'Today' },
+      shield(t.cycleDay),
+      h('div', null,
+        h('h1', { class: 'date-big', text: longDate(t.date) }),
+        h('p', { class: 'date-sub', text: sub }),
+        isStaff() ? h('label', { class: 'hint' }, 'Preview another day: ',
+          h('input', { type: 'date', value: t.date, style: 'width:auto;padding:.2rem .4rem', onchange: function (e) { loadToday(e.target.value); } })) : null),
+      h('div', { class: 'day-actions' }, actions));
+
+    var strip = h('section', { class: 'strip', 'aria-label': 'Daily items' });
+    if (s.landAcknowledgement || s.oCanadaVideoUrl || s.openingSlidesUrl) {
+      strip.appendChild(h('div', { class: 'strip-item opening' },
+        h('div', null, h('h2', { text: 'Start of day' }), h('p', { text: 'Land Acknowledgement and O Canada' })),
+        (s.landAcknowledgement || s.oCanadaVideoUrl)
+          ? h('button', { class: 'btn small', type: 'button', onclick: function () { openPresent(0, { openingOnly: true }); } }, 'Play opening')
+          : h('a', { class: 'btn small', href: s.openingSlidesUrl, target: '_blank', rel: 'noopener' }, 'Open slides')));
+    }
+    if (t.trait) {
+      strip.appendChild(h('div', { class: 'strip-item trait' }, h('h2', { text: 'Character education' }), h('p', { text: t.trait })));
+    }
+    var b = t.birthdays || { today: [], earlier: [] };
+    if (b.today.length || b.earlier.length) {
+      strip.appendChild(h('div', { class: 'strip-item' },
+        h('h2', { text: 'Happy birthday' }),
+        b.today.length ? h('p', { text: b.today.join(', ') }) : null,
+        b.earlier.length ? h('p', { class: 'earlier', text: (b.today.length ? 'Also over the weekend: ' : 'Over the weekend: ') + b.earlier.join(', ') }) : null));
+    }
+
+    var filter = h('div', { class: 'filter', role: 'group', 'aria-label': 'Show grades' },
+      h('span', { class: 'filter-label', text: 'Show' }),
+      [['all', 'All grades'], ['1-3', 'Grades 1–3'], ['4-6', 'Grades 4–6'], ['7-8', 'Grades 7–8']].map(function (f) {
+        return h('button', {
+          class: 'chip', type: 'button', 'aria-pressed': state.filter === f[0] ? 'true' : 'false',
+          onclick: function () { state.filter = f[0]; store('grade', f[0]); go('today', '', { noHistory: true }); }
+        }, f[1]);
+      }));
+
+    var board = h('section', { class: 'board columns', 'aria-label': 'Announcements' });
+    if (isStaff() && t.staffNotes && t.staffNotes.length) {
+      board.appendChild(h('div', { class: 'group all staff' },
+        h('h2', { text: 'For staff only' }),
+        t.staffNotes.map(function (a) { return card(a); })));
+    }
+    groupedAnnouncements(t, state.filter).forEach(function (g) {
+      board.appendChild(h('div', { class: 'group' + (g.code === 'all' ? ' all' : '') },
+        h('h2', { text: g.label }),
+        g.items.length ? g.items.map(function (a) { return card(a); }) : h('p', { class: 'empty', text: 'Nothing posted today.' })));
+    });
+
+    var foot = h('div', { class: 'footer-note' },
+      s.lunchMonitorUrl ? h('a', { href: s.lunchMonitorUrl, target: '_blank', rel: 'noopener', text: 'Student lunchroom monitor schedule' }) : null,
+      s.openingSlidesUrl ? h('a', { href: s.openingSlidesUrl, target: '_blank', rel: 'noopener', text: 'Land Acknowledgement and O Canada slides' }) : null,
+      !isStaff() && state.me && state.me.email ? h('button', { class: 'linkish', type: 'button', onclick: function () { go('access'); } }, 'Staff? Get access to post') : null);
+
+    append(view, [dayline, strip.childNodes.length ? strip : null, filter, board, foot]);
+  }
+
+  function loadToday(date) {
+    state.previewDate = date && date !== todayIso() ? date : '';
+    return api('getToday', state.previewDate || null).then(function (t) {
+      state.today = t;
+      if (state.view === 'today') { clear(view); renderToday(); }
+    }).catch(function (err) { toast(err.message); });
+  }
+
+  function scheduleRefresh() {
+    clearInterval(state.refreshTimer);
+    var minutes = (state.settings && state.settings.refreshMinutes) || 5;
+    state.refreshTimer = setInterval(function () {
+      if (state.view === 'today' && !state.previewDate && document.getElementById('present').hidden) loadToday();
+    }, minutes * 60000);
+  }
+
+  /* =========================================================
+   * Present mode
+   * ========================================================= */
+  var present = { slides: [], index: 0 };
+
+  function buildSlides(opts) {
+    var t = state.today, s = state.settings, slides = [];
+    var embed = videoEmbed(s.oCanadaVideoUrl);
+    if (s.landAcknowledgement || embed) {
+      slides.push(function () {
+        return h('div', { class: 'slide opening' },
+          h('div', { class: 'slide-kicker', text: 'Start of day' }),
+          s.landAcknowledgement ? [h('h2', { text: 'Land Acknowledgement' }), h('p', { class: 'slide-body', text: s.landAcknowledgement })] : null,
+          embed ? [h('h2', { text: 'O Canada' }), h('div', { class: 'slide-video' }, h('iframe', { src: embed, title: 'O Canada', allow: 'autoplay; encrypted-media; fullscreen', allowfullscreen: true }))] : null);
+      });
+    }
+    if (opts && opts.openingOnly) return slides;
+
+    slides.push(function () {
+      var b = t.birthdays || { today: [], earlier: [] };
+      var names = b.today.concat(b.earlier);
+      return h('div', { class: 'slide slide-cover' },
+        h('div', { class: 'slide-kicker', text: state.settings.schoolName }),
+        h('p', { class: 'big', text: longDate(t.date) }),
+        h('div', { class: 'facts' },
+          t.cycleDay ? h('div', null, h('b', { text: 'Day ' + t.cycleDay })) : null,
+          t.trait ? h('div', { text: t.trait }) : null,
+          names.length ? h('div', null, h('b', { text: 'Happy birthday: ' }), names.join(', ')) : null));
+    });
+
+    var seen = {};
+    groupedAnnouncements(t, state.filter).forEach(function (g) {
+      g.items.forEach(function (a) {
+        if (seen[a.id]) return; // an announcement for two grade groups is shown once
+        seen[a.id] = true;
+        slides.push(function () {
+          var embedUrl = a.videoEmbed || videoEmbed(a.videoUrl);
+          return h('div', { class: 'slide' },
+            h('div', { class: 'slide-kicker', text: gradeText(a.grades) + (a.important ? ' — Important' : '') }),
+            a.title ? h('h2', { text: a.title }) : null,
+            h('p', { class: 'slide-body' }, a.body),
+            a.photoIds && a.photoIds.length ? h('div', { class: 'slide-photos' }, a.photoIds.map(function (id) { return photoImg(id); })) : null,
+            embedUrl ? h('div', { class: 'slide-video' }, h('iframe', { src: embedUrl, title: 'Video', allow: 'encrypted-media; fullscreen', allowfullscreen: true })) : null,
+            a.linkUrl ? h('div', { class: 'slide-link', text: (a.linkLabel || 'Link') + ': ' + a.linkUrl }) : null,
+            a.authorName ? h('div', { class: 'slide-meta', text: 'From ' + a.authorName }) : null);
+        });
+      });
+    });
+    if (slides.length <= 1) {
+      slides.push(function () { return h('div', { class: 'slide' }, h('h2', { text: 'No announcements today.' })); });
+    }
+    return slides;
+  }
+
+  function openPresent(start, opts) {
+    present.slides = buildSlides(opts);
+    present.index = start || 0;
+    var p = document.getElementById('present');
+    p.hidden = false;
+    document.body.style.overflow = 'hidden';
+    try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); } catch (e) {}
+    showSlide();
+    document.getElementById('present-next').focus();
+  }
+
+  function closePresent() {
+    document.getElementById('present').hidden = true;
+    clear(document.getElementById('present-stage'));
+    document.body.style.overflow = '';
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+  }
+
+  function showSlide() {
+    var stage = clear(document.getElementById('present-stage'));
+    var total = present.slides.length;
+    present.index = Math.max(0, Math.min(present.index, total - 1));
+    var slide = present.slides[present.index]();
+    stage.appendChild(slide);
+    document.getElementById('present-count').textContent = (present.index + 1) + ' of ' + total;
+    document.getElementById('present-prev').disabled = present.index === 0;
+    document.getElementById('present-next').textContent = present.index === total - 1 ? 'Finish' : 'Next ›';
+    var prog = clear(document.getElementById('present-progress'));
+    for (var i = 0; i < total; i++) prog.appendChild(h('span', { class: i <= present.index ? 'on' : '' }));
+    fitSlide(stage, slide);
+  }
+
+  /** Largest type that still fits the screen, so short notes read from the back row. */
+  function fitSlide(stage, slide) {
+    var size = Math.min(window.innerWidth / 14, window.innerHeight / 7, 96);
+    var min = 18;
+    stage.style.fontSize = size + 'px';
+    var fits = function () { return slide.scrollHeight <= stage.clientHeight - 24 && slide.scrollWidth <= stage.clientWidth; };
+    while (!fits() && size > min) { size -= 2; stage.style.fontSize = size + 'px'; }
+  }
+
+  function nextSlide() { if (present.index >= present.slides.length - 1) closePresent(); else { present.index++; showSlide(); } }
+  function prevSlide() { if (present.index > 0) { present.index--; showSlide(); } }
+
+  document.getElementById('present-next').addEventListener('click', function (e) { e.stopPropagation(); nextSlide(); });
+  document.getElementById('present-prev').addEventListener('click', function (e) { e.stopPropagation(); prevSlide(); });
+  document.getElementById('present-close').addEventListener('click', function (e) { e.stopPropagation(); closePresent(); });
+  document.getElementById('present-stage').addEventListener('click', function (e) {
+    if (e.target.closest('a, iframe, button')) return;
+    nextSlide();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (document.getElementById('present').hidden) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); nextSlide(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prevSlide(); }
+    else if (e.key === 'Escape') closePresent();
+  });
+  window.addEventListener('resize', function () {
+    if (!document.getElementById('present').hidden) showSlide();
+  });
+
+  /* =========================================================
+   * New / edit announcement
+   * ========================================================= */
+  function renderEditor(arg, data) {
+    var editingId = state.view === 'edit' ? arg : '';
+    var holder = h('div', null, h('p', { class: 'loading', text: 'Loading…' }));
+    view.appendChild(pageHead(editingId ? 'Edit announcement' : 'New announcement',
+      editingId ? 'Changes show on Today as soon as you save.' : 'It appears on Today from the first day you choose.'));
+    view.appendChild(holder);
+
+    var load = editingId ? api('getAnnouncement', editingId) : Promise.resolve(data || null);
+    load.then(function (a) { clear(holder); buildEditor(holder, a, editingId); })
+        .catch(function (err) { showError(holder, err); });
+  }
+
+  function buildEditor(holder, existing, editingId) {
+    var today = todayIso();
+    var a = existing || {};
+    var model = {
+      id: editingId || '',
+      title: a.title || '',
+      body: a.body || '',
+      grades: (a.grades && a.grades.length) ? a.grades.slice() : [],
+      important: !!a.important,
+      staffOnly: !!a.staffOnly,
+      startDate: editingId ? a.startDate : (a.startDate && a.startDate >= today ? a.startDate : today),
+      endDate: editingId ? a.endDate : '',
+      daysOfWeek: (a.daysOfWeek || []).slice(),
+      linkUrl: a.linkUrl || '', linkLabel: a.linkLabel || '', videoUrl: a.videoUrl || '',
+      photoIds: (a.photoIds || []).slice(),
+      authorName: a.authorName || store('name') || (state.me && state.me.name) || ''
+    };
+    if (!model.endDate) model.endDate = model.startDate;
+    var localPhotos = {}, uploading = 0;
+
+    var errorBox = h('div', { role: 'alert' });
+    var preview = h('div');
+    var where = h('p', { class: 'preview-where' });
+
+    function refreshPreview() {
+      clear(preview).appendChild(card(Object.assign({}, model, { authorName: model.authorName, body: model.body || 'Your announcement will appear here.' }), { localPhotos: localPhotos }));
+      where.textContent = (model.grades.length ? gradeText(model.grades) : 'Choose who it is for') +
+        (model.staffOnly ? ' (staff only)' : '') + ' · ' + dateRange(model);
+    }
+
+    function input(type, key, attrs) {
+      return h(type === 'textarea' ? 'textarea' : 'input', Object.assign({
+        type: type === 'textarea' ? null : type, id: 'f-' + key, value: model[key],
+        oninput: function (e) { model[key] = e.target.value; refreshPreview(); }
+      }, attrs || {}));
+    }
+
+    // Who it is for
+    var gradeBoxes = {};
+    var gradeChecks = h('div', { class: 'checks' }, state.grades.map(function (g) {
+      var box = h('input', { type: 'checkbox', value: g.code, checked: model.grades.indexOf(g.code) !== -1, onchange: function (e) {
+        var code = e.target.value;
+        if (e.target.checked) {
+          if (code === 'all') model.grades = ['all'];
+          else model.grades = model.grades.filter(function (c) { return c !== 'all'; }).concat([code]);
+        } else model.grades = model.grades.filter(function (c) { return c !== code; });
+        Object.keys(gradeBoxes).forEach(function (c) { gradeBoxes[c].checked = model.grades.indexOf(c) !== -1; });
+        refreshPreview();
+      } });
+      gradeBoxes[g.code] = box;
+      return h('label', { class: 'check' }, box, g.label);
+    }));
+
+    // Dates
+    var startIn = input('date', 'startDate', { required: true });
+    var endIn = input('date', 'endDate', { required: true });
+    startIn.addEventListener('change', function () {
+      if (model.endDate < model.startDate) { model.endDate = model.startDate; endIn.value = model.endDate; }
+      endIn.min = model.startDate; refreshPreview();
+    });
+    endIn.min = model.startDate;
+    function setRange(start, end) {
+      model.startDate = start; model.endDate = end; startIn.value = start; endIn.value = end; endIn.min = start; refreshPreview();
+    }
+    var friday = (function () { var d = parseDate(model.startDate || today), add = (5 - d.getDay() + 7) % 7; return addDays(iso(d), add); })();
+    var quick = h('div', { class: 'checks' },
+      h('button', { type: 'button', class: 'btn small', onclick: function () { setRange(today, today); } }, 'Today only'),
+      h('button', { type: 'button', class: 'btn small', onclick: function () { setRange(addDays(today, 1), addDays(today, 1)); } }, 'Tomorrow only'),
+      h('button', { type: 'button', class: 'btn small', onclick: function () { setRange(today, friday); } }, 'Until Friday'));
+
+    var dayChecks = h('div', { class: 'checks' }, DAYS.map(function (d) {
+      return h('label', { class: 'check' }, h('input', { type: 'checkbox', value: d[0], checked: model.daysOfWeek.indexOf(d[0]) !== -1, onchange: function (e) {
+        if (e.target.checked) model.daysOfWeek.push(d[0]);
+        else model.daysOfWeek = model.daysOfWeek.filter(function (x) { return x !== d[0]; });
+        refreshPreview();
+      } }), d[1]);
+    }));
+
+    // Photos
+    var maxPhotos = state.settings.maxPhotos || 4;
+    var photoGrid = h('div', { class: 'photo-picker' });
+    var fileIn = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true, onchange: function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []);
+      e.target.value = '';
+      files.slice(0, maxPhotos - model.photoIds.length - uploading).forEach(addPhoto);
+    } });
+    function drawPhotos() {
+      clear(photoGrid);
+      model.photoIds.forEach(function (id) {
+        photoGrid.appendChild(h('div', { class: 'photo-tile' },
+          localPhotos[id] ? h('img', { src: localPhotos[id], alt: 'Photo' }) : photoImg(id),
+          h('button', { type: 'button', 'aria-label': 'Remove photo', onclick: function () {
+            model.photoIds = model.photoIds.filter(function (x) { return x !== id; }); drawPhotos(); refreshPreview();
+          } }, '×')));
+      });
+      for (var i = 0; i < uploading; i++) photoGrid.appendChild(h('div', { class: 'photo-tile' }, h('div', { class: 'busy', text: 'Uploading…' })));
+      if (model.photoIds.length + uploading < maxPhotos) {
+        photoGrid.appendChild(h('button', { type: 'button', class: 'photo-add', onclick: function () { fileIn.click(); } }, 'Add photos'));
+      }
+    }
+    function addPhoto(file) {
+      uploading++; drawPhotos();
+      resizeImage(file).then(function (dataUrl) {
+        return api('uploadPhoto', dataUrl.split(',')[1], file.name, 'image/jpeg').then(function (res) {
+          localPhotos[res.id] = dataUrl;
+          model.photoIds.push(res.id);
+        });
+      }).catch(function (err) {
+        toast(err.message || 'Couldn’t add that photo. Try a JPEG or PNG.');
+      }).then(function () { uploading--; drawPhotos(); refreshPreview(); });
+    }
+
+    var hasExtras = model.linkUrl || model.videoUrl || model.photoIds.length;
+    var bodyIn = input('textarea', 'body', { required: true, maxlength: 4000, 'aria-describedby': 'body-count' });
+    var counter = h('span', { class: 'counter', id: 'body-count' });
+    function count() { counter.textContent = model.body.length + ' / 4000'; }
+    bodyIn.addEventListener('input', count); count();
+
+    var saveBtn = h('button', { type: 'submit', class: 'btn primary', text: editingId ? 'Save changes' : 'Post announcement' });
+
+    var form = h('form', { class: 'form', novalidate: true, onsubmit: function (e) { e.preventDefault(); submit(false); } },
+      errorBox,
+      h('div', { class: 'field' }, h('label', { for: 'f-body' }, 'Announcement'), bodyIn, counter),
+      h('div', { class: 'field' }, h('label', { for: 'f-title' }, 'Headline ', h('span', { class: 'hint', text: '(optional, shown in bold)' })), input('text', 'title', { maxlength: 120 })),
+      h('fieldset', null, h('legend', { class: 'label', text: 'Who is it for?' }), gradeChecks),
+      h('div', { class: 'row' },
+        h('div', { class: 'field' }, h('label', { for: 'f-startDate' }, 'First day'), startIn),
+        h('div', { class: 'field' }, h('label', { for: 'f-endDate' }, 'Last day'), endIn)),
+      quick,
+      h('fieldset', null, h('legend', { class: 'label' }, 'Only on these days ', h('span', { class: 'hint', text: '(leave blank for every school day)' })), dayChecks),
+      h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: model.important, onchange: function (e) { model.important = e.target.checked; refreshPreview(); } }),
+        h('span', null, 'Mark as important', h('br'), h('span', { class: 'hint', text: 'Shown first, with a red label.' }))),
+      h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: model.staffOnly, onchange: function (e) { model.staffOnly = e.target.checked; refreshPreview(); } }),
+        h('span', null, 'Staff only', h('br'), h('span', { class: 'hint', text: 'Hidden from students and left out of Present mode.' }))),
+      h('details', { class: 'more', open: hasExtras ? true : null },
+        h('summary', { text: 'Add a link, video or photos' }),
+        h('div', { class: 'more-body' },
+          h('div', { class: 'row' },
+            h('div', { class: 'field' }, h('label', { for: 'f-linkUrl' }, 'Website link'), input('url', 'linkUrl', { placeholder: 'https://' })),
+            h('div', { class: 'field' }, h('label', { for: 'f-linkLabel' }, 'Button text'), input('text', 'linkLabel', { placeholder: 'Open link', maxlength: 60 }))),
+          h('div', { class: 'field' }, h('label', { for: 'f-videoUrl' }, 'Video ', h('span', { class: 'hint', text: '(YouTube or Google Drive link)' })), input('url', 'videoUrl', { placeholder: 'https://youtu.be/…' })),
+          h('div', { class: 'field' }, h('span', { class: 'label' }, 'Photos ', h('span', { class: 'hint', text: '(up to ' + maxPhotos + ')' })), photoGrid, fileIn))),
+      h('div', { class: 'field' }, h('label', { for: 'f-authorName' }, 'Your name as it appears'), input('text', 'authorName', { maxlength: 60, placeholder: 'e.g. Mr. Beaton' })),
+      h('div', { class: 'form-actions' }, saveBtn,
+        h('button', { type: 'button', class: 'btn', onclick: function () { go(editingId ? 'mine' : 'today'); } }, 'Cancel')));
+
+    function submit(confirmDuplicate) {
+      clear(errorBox);
+      var problem = !model.body.trim() ? 'Please write the announcement.'
+        : !model.grades.length ? 'Choose who the announcement is for.'
+        : !model.startDate ? 'Choose the first day.'
+        : model.endDate < model.startDate ? 'The last day can’t be before the first day.'
+        : uploading ? 'Wait for the photos to finish uploading.' : '';
+      if (problem) { errorBox.appendChild(h('p', { class: 'error', text: problem })); errorBox.scrollIntoView({ block: 'center' }); return; }
+      saveBtn.disabled = true;
+      store('name', model.authorName);
+      api('saveAnnouncement', model, { confirmDuplicate: confirmDuplicate }).then(function (res) {
+        saveBtn.disabled = false;
+        if (res.warning === 'duplicate') {
+          errorBox.appendChild(h('div', { class: 'notice' },
+            h('p', { text: 'This exact announcement is already scheduled for ' + dateRange(res.duplicate) + '.' }),
+            h('p', null, h('button', { type: 'button', class: 'btn small', onclick: function () { submit(true); } }, 'Post it anyway'))));
+          errorBox.scrollIntoView({ block: 'center' });
+          return;
+        }
+        toast(editingId ? 'Changes saved' : 'Announcement posted');
+        loadToday();
+        go('mine');
+      }).catch(function (err) {
+        saveBtn.disabled = false;
+        errorBox.appendChild(h('p', { class: 'error', text: err.message }));
+      });
+    }
+
+    drawPhotos();
+    refreshPreview();
+    holder.appendChild(h('div', { class: 'editor' },
+      form,
+      h('aside', { class: 'preview', 'aria-label': 'Preview' }, h('h2', { text: 'Preview' }), preview, where)));
+  }
+
+  /** Shrinks photos to 1600px on the long side before upload. */
+  function resizeImage(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var max = 1600, s = Math.min(1, max / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Couldn’t read that photo. Try a JPEG or PNG.')); };
+      img.src = url;
+    });
+  }
+
+  /* =========================================================
+   * My announcements
+   * ========================================================= */
+  function itemRow(a, opts) {
+    opts = opts || {};
+    var today = todayIso();
+    var status = a.endDate < today ? ['Ended', ''] : a.startDate > today ? ['Upcoming', 'gold'] : ['Showing now', 'green'];
+    var canEdit = isAdmin() || (state.me && a.authorEmail === state.me.email) || opts.mine;
+    return h('div', { class: 'item' },
+      h('div', { class: 'item-main' },
+        a.title ? h('p', { class: 'item-title', text: a.title }) : null,
+        h('p', { class: 'item-body', text: a.body }),
+        h('div', { class: 'item-meta' },
+          h('span', { class: 'pill ' + status[1], text: status[0] }),
+          a.staffOnly ? h('span', { class: 'pill red', text: 'Staff only' }) : null,
+          h('span', { text: dateRange(a) }),
+          h('span', { text: gradeText(a.grades) }),
+          opts.showAuthor && a.authorName ? h('span', { text: a.authorName }) : null,
+          (a.photoIds && a.photoIds.length) ? h('span', { text: a.photoIds.length + ' photo' + (a.photoIds.length > 1 ? 's' : '') }) : null,
+          a.videoUrl ? h('span', { text: 'Video' }) : null,
+          a.linkUrl ? h('span', { text: 'Link' }) : null)),
+      h('div', { class: 'item-actions' },
+        canEdit ? h('button', { type: 'button', class: 'btn small', onclick: function () { go('edit', a.id); } }, 'Edit') : null,
+        h('button', { type: 'button', class: 'btn small', onclick: function () {
+          go('new', '', { data: Object.assign({}, a, { id: '', startDate: '', endDate: '' }) });
+        } }, 'Duplicate'),
+        canEdit ? h('button', { type: 'button', class: 'btn small danger', onclick: function () {
+          if (!window.confirm('Delete this announcement? It will disappear from Today.')) return;
+          api('deleteAnnouncement', a.id).then(function () { toast('Announcement deleted'); loadToday(); if (opts.onChange) opts.onChange(); })
+            .catch(function (err) { toast(err.message); });
+        } }, 'Delete') : null));
+  }
+
+  function renderMine() {
+    view.appendChild(pageHead('My announcements', 'Edit, reuse or delete what you have posted.',
+      [h('button', { class: 'btn primary', type: 'button', onclick: function () { go('new'); } }, 'New announcement')]));
+    var holder = h('div', null, h('p', { class: 'loading', text: 'Loading…' }));
+    view.appendChild(holder);
+    api('getMine').then(function (list) {
+      clear(holder);
+      var today = todayIso();
+      var buckets = {
+        current: list.filter(function (a) { return a.startDate <= today && a.endDate >= today; }),
+        upcoming: list.filter(function (a) { return a.startDate > today; }).reverse(),
+        past: list.filter(function (a) { return a.endDate < today; })
+      };
+      var labels = { current: 'Showing now', upcoming: 'Upcoming', past: 'Past' };
+      if (!buckets[state.mineTab].length && buckets.current.length === 0 && buckets.upcoming.length) state.mineTab = 'upcoming';
+      var listEl = h('div', { class: 'list' });
+      var tabs = h('div', { class: 'tabs', role: 'tablist' });
+      function draw() {
+        clear(tabs);
+        Object.keys(labels).forEach(function (k) {
+          tabs.appendChild(h('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': state.mineTab === k ? 'true' : 'false',
+            onclick: function () { state.mineTab = k; draw(); } }, labels[k] + ' (' + buckets[k].length + ')'));
+        });
+        clear(listEl);
+        var items = buckets[state.mineTab];
+        if (!items.length) {
+          listEl.appendChild(h('p', { class: 'empty', text: state.mineTab === 'past' ? 'Nothing here yet.' : 'Nothing scheduled. Post a new announcement to see it here.' }));
+        }
+        items.forEach(function (a) { listEl.appendChild(itemRow(a, { mine: true, onChange: function () { go('mine', '', { noHistory: true }); } })); });
+      }
+      draw();
+      append(holder, [tabs, listEl]);
+    }).catch(function (err) { showError(holder, err); });
+  }
+
+  /* =========================================================
+   * All announcements (archive)
+   * ========================================================= */
+  function renderArchive() {
+    view.appendChild(pageHead('All announcements', 'Search everything posted since the site began.'));
+    var holder = h('div', null, h('p', { class: 'loading', text: 'Loading…' }));
+    view.appendChild(holder);
+    api('getArchive').then(function (list) {
+      clear(holder);
+      var authors = {};
+      list.forEach(function (a) { if (a.authorName) authors[a.authorName] = true; });
+      var q = h('input', { type: 'search', placeholder: 'Search words in announcements', 'aria-label': 'Search' });
+      var grade = h('select', { 'aria-label': 'Grade' }, h('option', { value: '', text: 'Any grade' }),
+        state.grades.map(function (g) { return h('option', { value: g.code, text: g.label }); }));
+      var author = h('select', { 'aria-label': 'Posted by' }, h('option', { value: '', text: 'Anyone' }),
+        Object.keys(authors).sort().map(function (n) { return h('option', { value: n, text: n }); }));
+      var listEl = h('div', { class: 'list' });
+      var shown = 50;
+      var summary = h('p', { class: 'hint' });
+      function draw() {
+        var words = q.value.toLowerCase().split(/\s+/).filter(String);
+        var filtered = list.filter(function (a) {
+          if (grade.value && a.grades.indexOf(grade.value) === -1) return false;
+          if (author.value && a.authorName !== author.value) return false;
+          var text = (a.title + ' ' + a.body + ' ' + a.authorName).toLowerCase();
+          return words.every(function (w) { return text.indexOf(w) !== -1; });
+        });
+        summary.textContent = filtered.length + ' announcement' + (filtered.length === 1 ? '' : 's');
+        clear(listEl);
+        filtered.slice(0, shown).forEach(function (a) { listEl.appendChild(itemRow(a, { showAuthor: true, onChange: function () { go('all', '', { noHistory: true }); } })); });
+        if (filtered.length > shown) {
+          listEl.appendChild(h('button', { type: 'button', class: 'btn', onclick: function () { shown += 50; draw(); } }, 'Show more'));
+        }
+      }
+      var timer;
+      q.addEventListener('input', function () { clearTimeout(timer); shown = 50; timer = setTimeout(draw, 150); });
+      grade.addEventListener('change', function () { shown = 50; draw(); });
+      author.addEventListener('change', function () { shown = 50; draw(); });
+      append(holder, [h('div', { class: 'toolbar' }, q, grade, author), summary, listEl]);
+      draw();
+    }).catch(function (err) { showError(holder, err); });
+  }
+
+  /* =========================================================
+   * Request staff access (for people the site doesn't recognise yet)
+   * ========================================================= */
+  function renderAccess() {
+    view.appendChild(pageHead('Get access to post', 'Staff can post and manage announcements. An admin approves each request.'));
+    var me = state.me;
+    var box = h('div', { class: 'panel', style: 'max-width:560px' });
+    view.appendChild(box);
+    if (me.pending) {
+      box.appendChild(h('p', { text: 'Your request is waiting for an admin. You’ll be able to post as soon as it’s approved.' }));
+      return;
+    }
+    var name = h('input', { type: 'text', id: 'acc-name', placeholder: 'e.g. Ms. Paulino', maxlength: 60 });
+    var btn = h('button', { type: 'button', class: 'btn primary', onclick: function () {
+      btn.disabled = true;
+      api('requestStaffAccess', name.value).then(function () {
+        state.me.pending = true; clear(view); renderAccess(); toast('Request sent');
+      }).catch(function (err) { btn.disabled = false; toast(err.message); });
+    } }, 'Request access');
+    append(box, [h('p', { text: 'Signed in as ' + me.email }),
+      h('div', { class: 'field' }, h('label', { for: 'acc-name' }, 'Your name as students know you'), name), h('div', null, btn)]);
+  }
+
+  /* =========================================================
+   * Admin
+   * ========================================================= */
+  function renderAdmin() {
+    view.appendChild(pageHead('Admin', 'Manage who can post, birthdays and site settings.'));
+    var tabs = h('div', { class: 'tabs', role: 'tablist' });
+    var body = h('div');
+    var TABS = [['staff', 'Staff'], ['admins', 'Admins'], ['birthdays', 'Birthdays'], ['settings', 'Settings'], ['legacy', 'Old Google Form']];
+    function draw() {
+      clear(tabs);
+      TABS.forEach(function (t) {
+        tabs.appendChild(h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': state.adminTab === t[0] ? 'true' : 'false',
+          onclick: function () { state.adminTab = t[0]; draw(); } }, t[1]));
+      });
+      clear(body).appendChild(h('p', { class: 'loading', text: 'Loading…' }));
+      ({ staff: adminStaff, admins: adminAdmins, birthdays: adminBirthdays, settings: adminSettings, legacy: adminLegacy })[state.adminTab](body);
+    }
+    append(view, [tabs, body]);
+    draw();
+  }
+
+  function adminStaff(body) {
+    api('listStaff').then(function (list) { drawStaff(body, list); }).catch(function (err) { showError(body, err); });
+  }
+  function drawStaff(body, list) {
+    clear(body);
+    state.pendingCount = list.filter(function (s) { return s.status === 'pending'; }).length;
+    renderNav();
+    var update = function (p) { p.then(function (l) { drawStaff(body, l); toast('Saved'); }).catch(function (err) { toast(err.message); }); };
+    var pending = list.filter(function (s) { return s.status === 'pending'; });
+    if (pending.length) {
+      body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Waiting for approval' }),
+        h('div', { class: 'list' }, pending.map(function (s) {
+          return h('div', { class: 'item' },
+            h('div', null, h('p', { class: 'item-title', text: s.name || s.email }), h('div', { class: 'item-meta', text: s.email })),
+            h('div', { class: 'item-actions' },
+              h('button', { class: 'btn small primary', type: 'button', onclick: function () { update(api('setStaffStatus', s.email, 'active')); } }, 'Approve'),
+              h('button', { class: 'btn small', type: 'button', onclick: function () { update(api('setStaffStatus', s.email, 'removed')); } }, 'Decline')));
+        }))));
+    }
+    var email = h('input', { type: 'email', placeholder: 'name@ddsb.ca', 'aria-label': 'Email' });
+    var name = h('input', { type: 'text', placeholder: 'Name, e.g. Mr. Levac', 'aria-label': 'Name' });
+    body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Add a staff member' }),
+      h('p', { class: 'hint', text: 'Staff can post announcements and edit their own.' }),
+      h('div', { class: 'inline-form' }, email, name,
+        h('button', { class: 'btn primary', type: 'button', onclick: function () { update(api('addStaff', email.value, name.value)); } }, 'Add'))));
+    var active = list.filter(function (s) { return s.status === 'active'; });
+    body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Staff who can post (' + active.length + ')' }),
+      h('table', { class: 'simple' },
+        h('thead', null, h('tr', null, h('th', { text: 'Name' }), h('th', { text: 'Email' }), h('th', { text: '' }))),
+        h('tbody', null, active.map(function (s) {
+          return h('tr', null, h('td', { text: s.name }), h('td', { text: s.email }),
+            h('td', null, h('button', { class: 'btn small danger', type: 'button', onclick: function () {
+              if (window.confirm('Remove ' + (s.name || s.email) + '? Their announcements stay up.')) update(api('setStaffStatus', s.email, 'removed'));
+            } }, 'Remove')));
+        })))));
+    var removed = list.filter(function (s) { return s.status === 'removed'; });
+    if (removed.length) {
+      body.appendChild(h('details', { class: 'panel' }, h('summary', { text: 'Removed (' + removed.length + ')' }),
+        h('div', { class: 'list' }, removed.map(function (s) {
+          return h('div', { class: 'item' }, h('div', { text: (s.name ? s.name + ' — ' : '') + s.email }),
+            h('button', { class: 'btn small', type: 'button', onclick: function () { update(api('setStaffStatus', s.email, 'active')); } }, 'Restore'));
+        }))));
+    }
+  }
+
+  function adminAdmins(body) {
+    var draw = function (res) {
+      clear(body);
+      var email = h('input', { type: 'email', placeholder: 'name@ddsb.ca', 'aria-label': 'Email' });
+      append(body, [
+        h('div', { class: 'panel' }, h('h2', { text: 'Admins' }),
+          h('p', { class: 'hint', text: 'Admins can edit or delete any announcement, approve staff and change settings.' }),
+          h('table', { class: 'simple' }, h('tbody', null, res.admins.map(function (e) {
+            return h('tr', null, h('td', { text: e }), h('td', null, e === res.owner
+              ? h('span', { class: 'pill', text: 'Site owner' })
+              : h('button', { class: 'btn small danger', type: 'button', onclick: function () {
+                  if (window.confirm('Remove ' + e + ' as an admin?')) api('removeAdmin', e).then(draw).catch(function (err) { toast(err.message); });
+                } }, 'Remove')));
+          })))),
+        h('div', { class: 'panel' }, h('h2', { text: 'Invite an admin' }),
+          h('div', { class: 'inline-form', style: 'grid-template-columns:1fr auto' }, email,
+            h('button', { class: 'btn primary', type: 'button', onclick: function () {
+              api('addAdmin', email.value).then(function (r) { draw(r); toast('Admin added. They can open Admin the next time they load the site.'); }).catch(function (err) { toast(err.message); });
+            } }, 'Make admin')))]);
+    };
+    api('listAdmins').then(draw).catch(function (err) { showError(body, err); });
+  }
+
+  function adminBirthdays(body) {
+    api('birthdayStatus').then(function (st) {
+      clear(body);
+      var result = h('div');
+      var fileIn = h('input', { type: 'file', accept: '.xlsx,.xls,.csv', 'aria-label': 'Class list file' });
+      var go1 = h('button', { type: 'button', class: 'btn primary', onclick: function () {
+        var f = fileIn.files[0];
+        if (!f) { toast('Choose the Excel file first.'); return; }
+        go1.disabled = true;
+        readFile(f).then(function (b64) { return api('importBirthdays', b64, f.name, false, null); }).then(function (p) {
+          go1.disabled = false;
+          clear(result).appendChild(h('div', { class: 'panel' },
+            h('h2', { text: 'Found ' + p.count + ' students' }),
+            p.skipped ? h('p', { class: 'hint', text: p.skipped + ' rows were skipped because a name or birth date was missing.' }) : null,
+            h('p', { class: 'hint', text: 'Columns used: ' + Object.keys(p.columns).map(function (k) { return k + ' = “' + p.columns[k] + '”'; }).join(', ') }),
+            h('table', { class: 'simple' }, h('thead', null, h('tr', null, h('th', { text: 'Shown as' }), h('th', { text: 'Birthday' }), h('th', { text: 'Grade' }), h('th', { text: 'Homeroom' }))),
+              h('tbody', null, p.sample.map(function (r) {
+                return h('tr', null, h('td', { text: r.name }), h('td', { text: new Date(2000, r.month - 1, r.day).toLocaleDateString('en-CA', { month: 'long', day: 'numeric' }) }), h('td', { text: r.grade }), h('td', { text: r.homeroom }));
+              }))),
+            h('div', null, h('button', { type: 'button', class: 'btn primary', onclick: function (e) {
+              e.target.disabled = true;
+              api('importBirthdays', null, null, true, p.token).then(function (r) { toast('Birthday list replaced (' + r.saved + ' students)'); adminBirthdays(body); })
+                .catch(function (err) { e.target.disabled = false; toast(err.message); });
+            } }, 'Replace the birthday list'))));
+        }).catch(function (err) { go1.disabled = false; clear(result).appendChild(h('p', { class: 'error', text: err.message })); });
+      } }, 'Check the file');
+      append(body, [
+        h('div', { class: 'panel' }, h('h2', { text: 'Birthday list' }),
+          h('p', { text: st.count + ' students' + (st.updated ? ', last updated ' + shortDate(st.updated) : '') + '.' }),
+          h('p', { class: 'hint', text: 'Upload the class list export from the LMS (Excel or CSV) whenever class lists change. It needs a name column and a birth date column. Only first name, last initial, month and day are kept — no birth years.' }),
+          h('div', { class: 'inline-form', style: 'grid-template-columns:1fr auto' }, fileIn, go1)),
+        result]);
+    }).catch(function (err) { showError(body, err); });
+  }
+
+  function readFile(file) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result).split(',')[1]); };
+      r.onerror = function () { reject(new Error('Couldn’t read that file.')); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  var SETTING_FIELDS = [
+    ['schoolName', 'School name', 'text', 'Shown at the top of every page.'],
+    ['siteTitle', 'Browser tab title', 'text', ''],
+    ['logoUrl', 'Knights logo', 'url', 'Link to the logo image (a public image link, or a Drive image shared with the school).'],
+    ['landAcknowledgement', 'Land Acknowledgement', 'textarea', 'Shown on the opening slide in Present mode. Leave blank to use the slides link instead.'],
+    ['oCanadaVideoUrl', 'O Canada video', 'url', 'YouTube or Drive link played on the opening slide.'],
+    ['openingSlidesUrl', 'Opening slides link', 'url', 'The existing Land Acknowledgement and O Canada slides.'],
+    ['lunchMonitorUrl', 'Lunchroom monitor schedule', 'url', 'The principal’s sheet, linked under Today.'],
+    ['staffEmailPattern', 'Treat these emails as staff', 'text', 'Optional. A pattern such as ^[a-z]+\\d{4}@ddsb\\.ca$ lets matching staff post without being added one by one. Leave blank to approve staff by hand.'],
+    ['refreshMinutes', 'Refresh Today every (minutes)', 'text', ''],
+    ['maxPhotos', 'Photos per announcement', 'text', '']
+  ];
+
+  function adminSettings(body) {
+    api('getSettingsForAdmin').then(function (values) {
+      clear(body);
+      var inputs = {};
+      var form = h('form', { class: 'form', style: 'max-width:760px', onsubmit: function (e) {
+        e.preventDefault();
+        var out = {};
+        Object.keys(inputs).forEach(function (k) { out[k] = inputs[k].value; });
+        api('saveSettings', out).then(function () {
+          toast('Settings saved');
+          return api('getBootstrap');
+        }).then(applyBootstrap).catch(function (err) { toast(err.message); });
+      } }, SETTING_FIELDS.map(function (f) {
+        var el = f[2] === 'textarea'
+          ? h('textarea', { id: 's-' + f[0], value: values[f[0]] || '' })
+          : h('input', { id: 's-' + f[0], type: f[2], value: values[f[0]] || '' });
+        inputs[f[0]] = el;
+        return h('div', { class: 'field' }, h('label', { for: 's-' + f[0], text: f[1] }), f[3] ? h('span', { class: 'hint', text: f[3] }) : null, el);
+      }), h('div', { class: 'form-actions' }, h('button', { type: 'submit', class: 'btn primary', text: 'Save settings' })));
+      body.appendChild(form);
+    }).catch(function (err) { showError(body, err); });
+  }
+
+  function adminLegacy(body) {
+    api('legacySyncStatus').then(function (st) {
+      clear(body);
+      var out = h('p');
+      append(body, h('div', { class: 'panel' },
+        h('h2', { text: 'Old Google Form' }),
+        h('p', { text: 'While staff are still using the old form, its responses can be copied into this site. Already-copied responses are skipped.' }),
+        h('div', { class: 'checks' },
+          h('button', { class: 'btn primary', type: 'button', onclick: function () {
+            api('importLegacy').then(function (r) { out.textContent = 'Copied ' + r.imported + ' new announcements.'; loadToday(); }).catch(function (err) { toast(err.message); });
+          } }, 'Copy new responses now'),
+          st.installed
+            ? h('button', { class: 'btn', type: 'button', onclick: function () { api('removeLegacyFormSync').then(function () { toast('Automatic copying stopped'); adminLegacy(body); }); } }, 'Stop copying automatically')
+            : h('button', { class: 'btn', type: 'button', onclick: function () { api('installLegacyFormSync').then(function () { toast('New form responses will be copied automatically'); adminLegacy(body); }); } }, 'Copy automatically on each response')),
+        h('p', { class: 'hint', text: st.installed ? 'Automatic copying is on.' : 'Automatic copying is off.' }),
+        out));
+    }).catch(function (err) { showError(body, err); });
+  }
+
+  /* =========================================================
+   * Start up
+   * ========================================================= */
+  function applyBootstrap(b) {
+    state.me = b.me; state.settings = b.settings; state.grades = b.grades; state.appUrl = b.appUrl;
+    if (b.today) state.today = b.today;
+    document.getElementById('brand-name').textContent = b.settings.schoolName || 'Winchester Public School';
+    var logo = document.getElementById('brand-logo');
+    if (b.settings.logoUrl) { logo.src = b.settings.logoUrl; logo.hidden = false; } else logo.hidden = true;
+  }
+
+  function start() {
+    api('getBootstrap').then(function (b) {
+      applyBootstrap(b);
+      var startView = (window.INITIAL_VIEW || '').split('/');
+      var go1 = function (hash) {
+        var parts = (hash || '').replace(/^#/, '').split('/');
+        var key = parts[0] || startView[0] || 'today';
+        go(key, parts[1] || startView[1] || '', { noHistory: true });
+      };
+      if (window.google && google.script && google.script.url) google.script.url.getLocation(function (loc) { go1(loc.hash); });
+      else go1(location.hash);
+      if (isAdmin()) api('listStaff').then(function (l) {
+        state.pendingCount = l.filter(function (s) { return s.status === 'pending'; }).length; renderNav();
+      }).catch(function () {});
+      scheduleRefresh();
+    }).catch(function (err) {
+      clear(view).appendChild(h('p', { class: 'error', text: 'The announcements couldn’t load: ' + err.message }));
+    });
+    if (window.google && google.script && google.script.history) {
+      google.script.history.setChangeHandler(function (e) {
+        var s = e.state || {};
+        go(s.view || 'today', s.arg || '', { noHistory: true });
+      });
+    }
+  }
+
+  start();
+})();
+</script>

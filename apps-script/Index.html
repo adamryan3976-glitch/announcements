@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <?!= include('Styles') ?>
+</head>
+<body>
+  <header class="masthead" id="masthead">
+    <a class="brand" href="#today" aria-label="Today's announcements">
+      <img class="brand-logo" id="brand-logo" alt="" hidden>
+      <span class="brand-name" id="brand-name">Winchester Public School</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+  </header>
+
+  <main id="view" tabindex="-1">
+    <p class="loading">Loading today's announcements…</p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="present" id="present" hidden role="dialog" aria-modal="true" aria-label="Present announcements">
+    <div class="present-bar">
+      <span class="present-count" id="present-count"></span>
+      <div class="present-controls">
+        <button type="button" class="present-btn" id="present-prev" aria-label="Previous">‹ Back</button>
+        <button type="button" class="present-btn" id="present-next" aria-label="Next">Next ›</button>
+        <button type="button" class="present-btn" id="present-close">Close</button>
+      </div>
+    </div>
+    <div class="present-stage" id="present-stage"></div>
+    <div class="present-progress" id="present-progress"></div>
+  </div>
+
+  <script>
+    window.INITIAL_VIEW = '<?= initialView ?>';
+  </script>
+  <?!= include('App') ?>
+</body>
+</html>
