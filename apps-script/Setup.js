@@ -44,8 +44,13 @@ function setupSheet() {
   var cycle = ss.getSheetByName(SHEETS.cycleDays);
   if (cycle && cycle.getLastRow() > 1) {
     var range = cycle.getRange(2, 2, cycle.getLastRow() - 1, 1);
-    var fixed = range.getValues().map(function (r) { return [cycleNumber_(r[0]) ? Number(cycleNumber_(r[0])) : '']; });
-    range.setNumberFormat('0').setValues(fixed);
+    // Only change cells that hold a day number; leave anything else as it is.
+    var fixed = range.getValues().map(function (r) {
+      var n = cycleNumber_(r[0]);
+      return [n ? Number(n) : r[0]];
+    });
+    range.setValues(fixed);
+    fixed.forEach(function (r, i) { if (typeof r[0] === 'number') range.getCell(i + 1, 1).setNumberFormat('0'); });
     CacheService.getScriptCache().remove('cycle');
     report.push('Cycle Days fixed to show 1–5.');
   }
@@ -57,6 +62,7 @@ function setupSheet() {
   // 6. Bring across the old form's announcements.
   var imp = importLegacy_();
   report.push('Copied ' + imp.imported + ' announcements from the old Google Form.');
+  if (imp.repaired) report.push('Fixed the text of ' + imp.repaired + ' copied announcements.');
 
   try { SpreadsheetApp.getUi().alert(report.join('\n')); } catch (e) { Logger.log(report.join('\n')); }
   return report;
