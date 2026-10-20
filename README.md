@@ -90,4 +90,5 @@ This uses sample data in `preview/mock.html`; nothing connects to Google.
 - `apps-script/Auth.js`: who is signed in and what they can do.
 - `apps-script/Setup.js`: one-time setup and repair.
 - `apps-script/Index.html`, `Styles.html`, `App.html`: the page.
-- `index.html`: the earlier GitHub Pages prototype. Kept for reference only.
+- `index.html`: GitHub Pages launcher. Gives the site its Knights favicon and home-screen icon, then opens the web app.
+- `icons/`, `manifest.webmanifest`: favicon, app and home-screen icons.
