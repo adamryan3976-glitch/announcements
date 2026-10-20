@@ -307,13 +307,17 @@ function importLegacy_() {
     var h = values[0].map(function (x) { return String(x).toLowerCase(); });
     var col = function (word) { for (var i = 0; i < h.length; i++) if (h[i].indexOf(word) !== -1) return i; return -1; };
     var cTime = col('timestamp'), cEmail = col('email'), cName = col('name'),
-        cStart = col('first date'), cEnd = col('last date'), cCat = col('category'), cText = col('announcement');
+        cStart = col('first date'), cEnd = col('last date'), cCat = col('category');
+    if (cStart === -1) cStart = col('start');
+    if (cEnd === -1) cEnd = col('end');
+    var cText = legacyTextColumn_(values, h, [cTime, cEmail, cName, cStart, cEnd, cCat]);
     if (cTime === -1 || cText === -1 || cStart === -1) throw new Error('The form response tab doesn\'t have the expected columns.');
 
     var sh = annSheet_();
     var header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
     var already = {};
     readObjects_(SHEETS.announcements).forEach(function (r) { if (r.legacyKey) already[r.legacyKey] = true; });
+    var repaired = repairLegacyBodies_(sh, header, values, cTime, cEmail, cText);
 
     var out = [], skipped = 0;
     for (var i = 1; i < values.length; i++) {
@@ -338,8 +342,64 @@ function importLegacy_() {
       already[key] = true;
     }
     if (out.length) sh.getRange(sh.getLastRow() + 1, 1, out.length, header.length).setValues(out);
-    return { imported: out.length, skipped: skipped };
+    return { imported: out.length, skipped: skipped, repaired: repaired };
   });
+}
+
+/**
+ * The column holding the announcement text. Several headings can mention
+ * "announcement" (for example a date question), so choose the one whose
+ * answers are mostly words rather than dates.
+ */
+function legacyTextColumn_(values, h, taken) {
+  var rows = values.slice(1, 201);
+  var score = function (c) {
+    var text = 0, len = 0;
+    rows.forEach(function (r) {
+      var v = r[c];
+      if (v === '' || v === null || v instanceof Date) return;
+      var str = String(v).trim();
+      if (!/[a-z]{3}/i.test(str)) return;
+      text++; len += str.length;
+    });
+    return text ? text * 1000 + len / text : 0;
+  };
+  var best = -1, bestScore = 0;
+  var pick = function (onlyNamed) {
+    for (var c = 0; c < h.length; c++) {
+      if (taken.indexOf(c) !== -1) continue;
+      if (onlyNamed && h[c].indexOf('announcement') === -1) continue;
+      var sc = score(c);
+      if (sc > bestScore) { bestScore = sc; best = c; }
+    }
+  };
+  pick(true);
+  if (best === -1) pick(false);
+  return best;
+}
+
+/** Fixes copied rows whose text came across as a date by mistake. */
+function repairLegacyBodies_(sh, header, values, cTime, cEmail, cText) {
+  var iKey = header.indexOf('legacyKey'), iBody = header.indexOf('body');
+  if (iKey === -1 || iBody === -1 || sh.getLastRow() < 2) return 0;
+  var textByKey = {};
+  for (var i = 1; i < values.length; i++) {
+    var r = values[i], ts = r[cTime];
+    var key = (ts instanceof Date ? ts.toISOString() : String(ts)) + '|' + String(r[cEmail] || '').toLowerCase();
+    textByKey[key] = cleanText_(r[cText], LIMITS.body);
+  }
+  var range = sh.getRange(2, 1, sh.getLastRow() - 1, header.length);
+  var rows = range.getValues(), fixed = 0;
+  rows.forEach(function (row, n) {
+    var body = row[iBody];
+    var looksLikeDate = body instanceof Date || /GMT[+-]\d{4}/.test(String(body)) || /^\d{4}-\d{2}-\d{2}$/.test(String(body).trim());
+    var good = textByKey[row[iKey]];
+    if (row[iKey] && looksLikeDate && good) {
+      sh.getRange(n + 2, iBody + 1).setValue(good);
+      fixed++;
+    }
+  });
+  return fixed;
 }
 
 /** While the old Google Form is still open, copy each new response across. */
