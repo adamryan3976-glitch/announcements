@@ -201,7 +201,7 @@
    * Today
    * ========================================================= */
   function shield(cycleDay) {
-    var svg = '<svg viewBox="0 0 92 104" aria-hidden="true"><path d="M46 3 L88 14 V50 C88 76 70 93 46 101 C22 93 4 76 4 50 V14 Z" fill="#C99A2E" stroke="#14213D" stroke-width="3"/><path d="M46 11 L80 20 V50 C80 71 66 85 46 92 C26 85 12 71 12 50 V20 Z" fill="none" stroke="#14213D" stroke-opacity=".35" stroke-width="1.5"/></svg>';
+    var svg = '<svg viewBox="0 0 92 104" aria-hidden="true"><path d="M46 3 L88 14 V50 C88 76 70 93 46 101 C22 93 4 76 4 50 V14 Z" fill="#E9A92B" stroke="#3A2410" stroke-width="3"/><path d="M46 11 L80 20 V50 C80 71 66 85 46 92 C26 85 12 71 12 50 V20 Z" fill="none" stroke="#3A2410" stroke-opacity=".4" stroke-width="1.5"/></svg>';
     var wrap = h('div', { class: 'shield' + (cycleDay ? '' : ' no-school'), role: 'img', 'aria-label': cycleDay ? 'Day ' + cycleDay : 'No cycle day' });
     wrap.innerHTML = svg; // static markup only
     wrap.appendChild(cycleDay
@@ -255,7 +255,7 @@
     }
     var b = t.birthdays || { today: [], earlier: [] };
     if (b.today.length || b.earlier.length) {
-      strip.appendChild(h('div', { class: 'strip-item' },
+      strip.appendChild(h('div', { class: 'strip-item birthdays' },
         h('h2', { text: 'Happy birthday' }),
         b.today.length ? h('p', { text: b.today.join(', ') }) : null,
         b.earlier.length ? h('p', { class: 'earlier', text: (b.today.length ? 'Also over the weekend: ' : 'Over the weekend: ') + b.earlier.join(', ') }) : null));
@@ -328,8 +328,11 @@
       var b = t.birthdays || { today: [], earlier: [] };
       var names = b.today.concat(b.earlier);
       return h('div', { class: 'slide slide-cover' },
-        h('div', { class: 'slide-kicker', text: state.settings.schoolName }),
-        h('p', { class: 'big', text: longDate(t.date) }),
+        h('div', { class: 'cover-head' },
+          h('img', { class: 'cover-crest', src: logoUrl(), alt: '', onerror: function (e) { e.target.remove(); } }),
+          h('div', null,
+            h('div', { class: 'slide-kicker', text: state.settings.schoolName }),
+            h('p', { class: 'big', text: longDate(t.date).replace(/ (\d+)$/, '\u00a0$1') }))),
         h('div', { class: 'facts' },
           t.cycleDay ? h('div', null, h('b', { text: 'Day ' + t.cycleDay })) : null,
           t.trait ? h('div', { text: t.trait }) : null,
@@ -616,7 +619,7 @@
       quick,
       h('fieldset', null, h('legend', { class: 'label' }, 'Only on these days ', h('span', { class: 'hint', text: '(leave blank for every school day)' })), dayChecks),
       h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: model.important, onchange: function (e) { model.important = e.target.checked; refreshPreview(); } }),
-        h('span', null, 'Mark as important', h('br'), h('span', { class: 'hint', text: 'Shown first, with a red label.' }))),
+        h('span', null, 'Mark as important', h('br'), h('span', { class: 'hint', text: 'Shown first, with a red seal.' }))),
       h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: model.staffOnly, onchange: function (e) { model.staffOnly = e.target.checked; refreshPreview(); } }),
         h('span', null, 'Staff only', h('br'), h('span', { class: 'hint', text: 'Hidden from students and left out of Present mode.' }))),
       h('details', { class: 'more', open: hasExtras ? true : null },
@@ -1011,12 +1014,20 @@
   /* =========================================================
    * Start up
    * ========================================================= */
+  /** The crest from Settings, or the one kept in the GitHub repo. */
+  function logoUrl() {
+    return (state.settings && state.settings.logoUrl) ||
+      'https://raw.githubusercontent.com/adamryan3976-glitch/announcements/main/icons/logo-512.png';
+  }
+
   function applyBootstrap(b) {
     state.me = b.me; state.settings = b.settings; state.grades = b.grades; state.appUrl = b.appUrl;
     if (b.today) state.today = b.today;
     document.getElementById('brand-name').textContent = b.settings.schoolName || 'Winchester Public School';
     var logo = document.getElementById('brand-logo');
-    if (b.settings.logoUrl) { logo.src = b.settings.logoUrl; logo.hidden = false; } else logo.hidden = true;
+    logo.onerror = function () { logo.hidden = true; };
+    logo.src = logoUrl();
+    logo.hidden = false;
   }
 
   function start() {
