@@ -1,78 +1,838 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Winchester P.S. Announcements</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Winchester Clue</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0f1a33">
+<meta property="og:image" content="logo.jpg">
+<meta name="description" content="What did the butler see? The case file, evidence board and class answer sheet for our Clue week.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Libre+Franklin:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
 
-  <!-- Icons for the browser tab and for saving to a phone's home screen -->
-  <link rel="icon" href="icons/favicon.ico" sizes="any">
-  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0b2550">
-  <meta name="apple-mobile-web-app-title" content="WPS News">
+/* Layout: a 1940s radio-theatre case file. Dark broadcast masthead with a five-day dial, then the evidence board, the case log and the class answer sheet. */
+:root{
+  --bg:#ebe7f0; --surface:#fbf9fd; --sunk:#e1dbe9; --fg:#221a30; --muted:#5e5570; --line:#d2c9de;
+  --brass:#87570f; --brass-soft:#f3e5c8; --stamp:#b3261e; --stamp-soft:#f8dedb; --ok:#2d6a38; --ok-soft:#dcefdc;
+  --mast:#13203d; --mast-fg:#f2f5fb; --mast-muted:#aeb9d0; --glow:#f2b84b;
+  --display:"Limelight","Didot","Bodoni 72",Georgia,serif;
+  --body:"Libre Franklin",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Courier Prime","Courier New",Courier,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14111c; --surface:#1d1828; --sunk:#17131f; --fg:#efe9f6; --muted:#a59bb7; --line:#342c44;
+  --brass:#e6b45a; --brass-soft:#3a2f1a; --stamp:#ff7a6c; --stamp-soft:#3d1c1a; --ok:#86d293; --ok-soft:#1b3320;
+  --mast:#0a1124; --mast-fg:#f2f5fb; --mast-muted:#a3aec6; --glow:#f2b84b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14111c; --surface:#1d1828; --sunk:#17131f; --fg:#efe9f6; --muted:#a59bb7; --line:#342c44;
+  --brass:#e6b45a; --brass-soft:#3a2f1a; --stamp:#ff7a6c; --stamp-soft:#3d1c1a; --ok:#86d293; --ok-soft:#1b3320;
+  --mast:#0a1124; --mast-fg:#f2f5fb; --mast-muted:#a3aec6; --glow:#f2b84b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{text-wrap:balance;margin:0}
+h2{font-family:var(--display);font-weight:400;font-size:clamp(1.6rem,3.4vw,2.2rem);letter-spacing:.01em}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+a{color:var(--brass)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:.78rem}
+.tabnum{font-variant-numeric:tabular-nums}
 
-  <style>
-    html, body { height: 100%; margin: 0; }
-    body {
-      background: radial-gradient(circle at 50% 38%, #1a4f94, #0b2550);
-      color: #fff;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      overflow: hidden;
-    }
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--mast);color:var(--mast-fg);border-bottom:1px solid #00000040}
+.nav .wrap{display:flex;gap:4px 18px;align-items:center;flex-wrap:wrap;padding-block:8px}
+.nav .brand{font-family:var(--display);font-size:1.15rem;margin-right:auto;color:var(--mast-fg);text-decoration:none}
+.nav a.l{color:var(--mast-muted);text-decoration:none;font-size:.92rem;padding:4px 0}
+.nav a.l:hover,.nav a.l[aria-current="page"]{color:var(--mast-fg)}
+.nav .desk-btn{background:var(--glow);color:#241a05;border:0;border-radius:999px;padding:5px 14px;font-weight:600;font-size:.88rem;cursor:pointer}
 
-    /* Shown while the app loads, underneath the frame. */
-    .loading {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 1.25rem; text-align: center; padding: 16px; box-sizing: border-box;
-    }
-    .loading img { width: 160px; height: 160px; }
-    .loading h1 { font-size: 1.4rem; font-weight: 600; margin: 0; }
-    .loading p { margin: 0; opacity: .8; font-size: .9rem; }
+/* masthead */
+.mast{background:var(--mast);color:var(--mast-fg);padding-block:44px 40px;position:relative;overflow:hidden}
+.mast::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 80% at 85% 10%,#f2b84b22,transparent 60%),repeating-linear-gradient(90deg,#ffffff06 0 2px,transparent 2px 6px);pointer-events:none}
+.mast .wrap{position:relative;display:grid;gap:18px}
+.onair{display:inline-flex;align-items:center;gap:8px;color:var(--glow)}
+.onair i{width:9px;height:9px;border-radius:50%;background:#ff4d3d;box-shadow:0 0 10px #ff4d3d;animation:blink 2.4s infinite}
+@keyframes blink{0%,60%{opacity:1}70%,90%{opacity:.25}}
+.mast h1{font-family:var(--display);font-weight:400;font-size:clamp(2.3rem,7vw,4.6rem);line-height:1.02;color:var(--mast-fg)}
+.mast h1 em{font-style:normal;color:var(--glow)}
+.mast .lede{max-width:62ch;color:var(--mast-muted);font-size:1.06rem}
+.next{font-family:var(--mono);font-size:.95rem;color:var(--mast-fg);display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.next b{color:var(--glow);font-weight:700}
 
-    /* The announcements app, filling the window. */
-    iframe {
-      position: fixed; inset: 0; width: 100%; height: 100%;
-      border: 0; display: block; background: transparent;
-    }
+/* dial */
+.dial{margin-top:6px;background:#00000033;border:1px solid #ffffff1c;border-radius:14px;padding:16px 18px 12px}
+.dial-scale{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.dial-day{position:relative;text-align:center;padding-top:30px}
+.dial-day .ticks{position:absolute;top:0;left:12%;right:12%;display:flex;justify-content:space-between;height:20px;align-items:flex-end}
+.dial-day .ticks span{width:3px;height:14px;border-radius:2px;background:#ffffff2e}
+.dial-day .ticks span.lit{background:var(--glow);box-shadow:0 0 8px var(--glow)}
+.dial-day b{display:block;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;color:var(--mast-muted)}
+.dial-day small{display:block;font-family:var(--mono);font-size:.82rem;color:var(--mast-fg)}
+.dial-day.now b{color:var(--glow)}
+.dial-line{position:absolute;left:0;right:0;top:20px;height:1px;background:#ffffff26}
+.needle{position:absolute;top:-6px;width:2px;height:34px;background:#ff4d3d;box-shadow:0 0 8px #ff4d3d;transition:left .6s ease}
 
-    /* Way out for browsers that block Google sign-in inside a page. */
-    a.direct {
-      position: fixed; right: 12px; bottom: 12px; z-index: 2;
-      background: #0b2550; color: #fff; text-decoration: none;
-      font-size: .8rem; font-weight: 600; line-height: 1;
-      padding: .55rem .85rem; border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, .35);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
-      opacity: .85;
-    }
-    a.direct:hover, a.direct:focus-visible { opacity: 1; }
-    a.direct:focus-visible { outline: 3px solid #45dcf7; outline-offset: 2px; }
-    a.direct span { font-weight: 400; opacity: .8; }
-  </style>
+/* sections */
+section.band{padding-block:44px}
+section.band + section.band{border-top:1px solid var(--line)}
+.sec-head{display:flex;justify-content:space-between;gap:12px 20px;align-items:end;flex-wrap:wrap;margin-bottom:20px}
+.sec-head p{max-width:60ch}
+
+/* closed banner */
+.closed{background:var(--surface);border:2px solid var(--stamp);border-radius:16px;padding:26px;display:grid;gap:14px;position:relative}
+.closed .big{font-family:var(--display);font-size:clamp(1.8rem,5vw,3rem);color:var(--stamp);transform:rotate(-2deg);display:inline-block;border:3px solid var(--stamp);padding:2px 14px;border-radius:6px;justify-self:start}
+.solution{display:flex;flex-wrap:wrap;gap:8px}
+.solution span{background:var(--ok-soft);color:var(--ok);border-radius:999px;padding:4px 14px;font-weight:700}
+blockquote.story{margin:0;padding:14px 18px;border-left:4px solid var(--brass);background:var(--sunk);border-radius:0 10px 10px 0;white-space:pre-wrap}
+
+/* board */
+.board-group{display:grid;gap:10px;margin-bottom:22px}
+.board-group h3{font-family:var(--mono);font-size:.8rem;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px;text-align:left;cursor:pointer;transition:transform .15s ease}
+.card:hover{transform:translateY(-2px)}
+.card .pic{aspect-ratio:1/1;max-width:100%;border-radius:8px;background:var(--sunk);display:grid;place-items:center;overflow:hidden;color:var(--brass)}
+.card .pic img{width:100%;height:100%;object-fit:cover}
+.card .pic svg{width:46%;height:46%}
+.card .nm{font-weight:700;line-height:1.2}
+.card .nt{font-size:.84rem;color:var(--muted);line-height:1.35}
+.card .by{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.card.out .pic,.card.out .nm,.card.out .nt{opacity:.42}
+.card .stamp{position:absolute;top:34%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);font-family:var(--mono);font-weight:700;letter-spacing:.08em;color:var(--stamp);border:3px solid var(--stamp);border-radius:6px;padding:2px 10px;background:color-mix(in srgb,var(--surface) 82%,transparent);font-size:.95rem;white-space:nowrap;pointer-events:none}
+.card.seen{border:2px solid var(--ok)}
+.card .stamp.seen{color:var(--ok);border-color:var(--ok)}
+.card .pencil{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:.74rem;background:var(--brass-soft);color:var(--brass);border-radius:999px;padding:1px 8px;font-weight:700}
+.notebar{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.notebar button{background:none;border:1px solid var(--line);border-radius:999px;padding:3px 12px;cursor:pointer;color:var(--muted)}
+
+/* letter */
+.letter{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px 24px;font-family:var(--mono);font-size:.95rem;line-height:1.6;max-width:62ch;display:grid;gap:10px;box-shadow:0 1px 0 var(--line),0 10px 24px -18px #00000080}
+.letter .sig{font-style:italic}
+
+/* case log */
+.log{display:grid;gap:26px}
+.log-day{display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px}
+@media (max-width:640px){.log-day{grid-template-columns:minmax(0,1fr)}}
+.log-day > .lbl{font-family:var(--display);font-size:1.6rem;color:var(--brass);line-height:1}
+.log-day > .lbl small{display:block;font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-top:6px}
+.entries{display:grid;gap:14px;min-width:0}
+.entry{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:grid;gap:12px;min-width:0}
+.entry .when{font-family:var(--mono);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.entry p{max-width:68ch}
+.riddle{margin:0;background:var(--brass-soft);border-radius:10px;padding:14px 16px;display:grid;gap:8px}
+.riddle figcaption{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--brass);font-weight:700}
+.riddle blockquote{margin:0;font-size:1.2rem;font-weight:600;line-height:1.4}
+.riddle img{border-radius:8px;max-height:520px;width:auto;justify-self:start;background:#fff}
+.points{margin:0;padding-left:20px;display:grid;gap:4px}
+.points-h{font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{border-radius:999px;padding:2px 12px;font-size:.88rem;font-weight:600}
+.chip.x{background:var(--stamp-soft);color:var(--stamp);text-decoration:line-through}
+.tb{font-family:var(--mono);font-size:.92rem}
+
+/* hall */
+.hall{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.trophy{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:4px}
+.trophy .r{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.trophy b{font-size:1.1rem}
+
+/* forms */
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:grid;gap:16px;max-width:760px}
+.field{display:grid;gap:6px;min-width:0}
+.field label{font-weight:600;font-size:.94rem}
+.field .hint{font-size:.85rem;color:var(--muted)}
+input[type=text],input[type=number],input[type=email],input[type=date],input[type=time],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+textarea{min-height:120px;resize:vertical}
+.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.btn{background:var(--fg);color:var(--bg);border:0;border-radius:999px;padding:10px 20px;font-weight:700;cursor:pointer;justify-self:start}
+.btn.brass{background:var(--brass);color:var(--surface)}
+.btn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
+.btn.sm{padding:5px 12px;font-size:.86rem;font-weight:600}
+.btn.danger{background:var(--stamp);color:var(--surface)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.sendbox{border:2px dashed var(--brass);border-radius:12px;padding:16px;display:grid;gap:10px;background:var(--brass-soft)}
+.sendbox pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(--mono);font-size:.9rem;background:var(--surface);border-radius:8px;padding:10px 12px;user-select:all}
+.ok-note{background:var(--ok-soft);color:var(--ok);border-radius:10px;padding:10px 14px;font-weight:600}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* desk */
+.desk-head{background:var(--mast);color:var(--mast-fg);padding-block:26px}
+.desk-head .wrap{display:grid;gap:14px}
+.desk-head h1{font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,4vw,2.6rem)}
+.desk-head p{color:var(--mast-muted);max-width:70ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{background:#ffffff14;color:var(--mast-fg);border:1px solid #ffffff22;border-radius:999px;padding:6px 16px;cursor:pointer;font-weight:600}
+.tabs button[aria-selected="true"]{background:var(--glow);color:#241a05;border-color:transparent}
+.panel{padding-block:28px 60px;display:grid;gap:24px}
+.due-banner{background:var(--brass-soft);border:1px solid var(--brass);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.day-block{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.day-block > header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.day-block > header h3{font-family:var(--display);font-weight:400;font-size:1.5rem}
+.day-block > header .today{font-family:var(--mono);font-size:.78rem;color:var(--surface);background:var(--brass);border-radius:999px;padding:2px 10px}
+.day-body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0}
+@media (max-width:820px){.day-body{grid-template-columns:minmax(0,1fr)}}
+.rel-list,.check-list{padding:12px 18px 16px;display:grid;gap:10px;align-content:start;min-width:0}
+.check-list{border-left:1px solid var(--line)}
+@media (max-width:820px){.check-list{border-left:0;border-top:1px solid var(--line)}}
+.rel{display:grid;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rel:last-child{border-bottom:0}
+.rel-top{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap}
+.rel-top .t{font-family:var(--mono);font-size:.85rem;color:var(--muted);min-width:5.5em}
+.rel-top .lab{font-weight:600;margin-right:auto}
+.pill{font-family:var(--mono);font-size:.74rem;border-radius:999px;padding:1px 9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.pill.live{background:var(--ok-soft);color:var(--ok)}
+.pill.due{background:var(--stamp-soft);color:var(--stamp)}
+.pill.sched{background:var(--sunk);color:var(--muted)}
+.check-list h4,.rel-list h4{margin:0;font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.93rem;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--brass)}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.preview{border-top:1px dashed var(--line);padding-top:10px}
+.edit-box{display:grid;gap:8px;background:var(--sunk);padding:12px;border-radius:10px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.yes{color:var(--ok);font-weight:700}.no{color:var(--stamp);font-weight:700}
+tr.crowned td{background:var(--brass-soft)}
+.winner-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:600}
+.pads{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.pad{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px}
+.pad .play{display:flex;align-items:center;gap:12px;background:var(--mast);color:var(--mast-fg);border:0;border-radius:12px;padding:16px;cursor:pointer;text-align:left;font-weight:700;font-size:1.02rem}
+.pad .play .k{font-family:var(--mono);background:#ffffff1f;border-radius:6px;padding:1px 8px}
+.pad .play.on{background:var(--glow);color:#241a05}
+.pad .play[disabled]{opacity:.45;cursor:not-allowed}
+.pad .fn{font-size:.84rem;color:var(--muted);word-break:break-word}
+.setup-grid{display:grid;gap:22px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:14px}
+.box h3{font-family:var(--display);font-weight:400;font-size:1.35rem}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ph{display:grid;gap:6px;font-size:.88rem}
+.ph .pic{aspect-ratio:1/1;max-width:100%;background:var(--sunk);border-radius:8px;overflow:hidden;display:grid;place-items:center;color:var(--muted)}
+.ph .pic img{width:100%;height:100%;object-fit:cover}
+.ph input[type=file]{font-size:.8rem;max-width:100%}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+footer.foot{padding-block:30px 50px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.mast-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px);gap:28px;align-items:center}
+.mast-copy{display:grid;gap:18px;min-width:0;order:1}
+.mast-logo{order:2;width:100%;max-width:300px;height:auto;justify-self:end;border-radius:14px;box-shadow:0 18px 40px -18px #000c,0 0 0 1px #ffffff1a}
+@media (max-width:760px){.mast-grid{grid-template-columns:minmax(0,1fr);gap:18px}.mast-logo{order:0;max-width:210px;justify-self:start}}
+.nav .brand{display:inline-flex;align-items:center;gap:10px}
+.nav .brand img{width:28px;height:28px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1px #ffffff33}
+.footrow{display:flex;gap:10px 20px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.85rem}
+.linkbtn:hover{color:var(--fg)}
+code{font-family:var(--mono);font-size:.92em;background:var(--sunk);padding:1px 5px;border-radius:4px}
+
+</style>
 </head>
 <body>
-  <div class="loading" aria-hidden="true">
-    <img src="icons/logo.svg" alt="">
-    <h1>Winchester P.S. Announcements</h1>
-    <p>Loading today's announcements…</p>
-  </div>
+<div id="app"><noscript><p style="padding:20px">This site needs JavaScript turned on.</p></noscript></div>
+<script type="module">
+/* ============================================================
+   1. PASTE YOUR FIREBASE WEB CONFIG HERE
+   Firebase console > Project settings > Your apps > Web app > SDK setup and configuration > Config
+   (This config is not a secret. It is safe in a public repo.)
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBYFCE2cWEEAYE3E1YfUQgp_4jyVLC7FCE",
+  authDomain: "wps-clue.firebaseapp.com",
+  projectId: "wps-clue",
+  storageBucket: "wps-clue.firebasestorage.app",
+  messagingSenderId: "929798009777",
+  appId: "1:929798009777:web:f18a8581b4e2a18707c390",
+  measurementId: "G-HPG18WXE7R"
+};
 
-  <iframe id="app" title="Winchester P.S. Announcements"
-    allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write"
-    allowfullscreen></iframe>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot, collection, addDoc, serverTimestamp, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  <a class="direct" id="direct" target="_top" rel="noopener"><span>Not loading?</span> Open directly</a>
+const CONFIGURED = !!firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('PASTE') !== 0;
+let db = null, auth = null;
+if (CONFIGURED) { const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); }
 
-  <script>
-    var APP_URL = 'https://script.google.com/a/macros/ddsb.ca/s/AKfycbxfOfWmAHl3HXVitB70oWOZuNKeasRwB3fq5SVCHaP2z1BycROjhazJvG3UK0dA_UJr/exec';
+/* ---------- helpers ---------- */
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+function toast(msg, ms) {
+  let t = $('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, ms || 3200);
+}
 
-    // Pass along ?view=... so links like announcements.winchesterps.ca/?view=new still work.
-    var url = APP_URL + location.search;
-    document.getElementById('app').src = url;
-    document.getElementById('direct').href = url;
-  </script>
+/* ---------- the game ---------- */
+const DEFAULT_PUB = { settings: { school: 'Winchester', day1: '2026-10-26', times: { am: '09:00', mid: '13:00', pm: '15:00' }, names: {}, actors: {} }, released: {}, winners: {} };
+let PUB = clone(DEFAULT_PUB);
+function normalize(p) {
+  p = p || {}; const d = clone(DEFAULT_PUB);
+  p.settings = Object.assign(d.settings, p.settings || {});
+  p.settings.times = Object.assign({ am: '09:00', mid: '13:00', pm: '15:00' }, p.settings.times || {});
+  p.settings.names = p.settings.names || {}; p.settings.actors = p.settings.actors || {};
+  p.released = p.released || {}; p.winners = p.winners || {};
+  return p;
+}
+
+const S = [
+  { id: 'peacock', g: 'person', name: 'Mrs. Peacock', note: 'Beautiful, and flutters here and there like a bird.' },
+  { id: 'mustard', g: 'person', name: 'Colonel Mustard', note: 'Their room always smells of French-style mustards.' },
+  { id: 'white', g: 'person', name: 'Ms. White', note: 'Obsessed with cleanliness. Often seen with a bottle of bleach.' },
+  { id: 'plum', g: 'person', name: 'Professor Plum', note: 'Wadsworth finds them plum delightful.' },
+  { id: 'office', g: 'place', name: 'The Office' }, { id: 'library', g: 'place', name: 'The Library' },
+  { id: 'staffroom', g: 'place', name: 'The Staffroom' }, { id: 'garden', g: 'place', name: 'The Garden' },
+  { id: 'wrench', g: 'thing', name: 'The Wrench' }, { id: 'candy', g: 'thing', name: 'The Candy Stick' },
+  { id: 'teapot', g: 'thing', name: 'The Teapot' }, { id: 'shovel', g: 'thing', name: 'The Shovel' }
+];
+function sus(id) { return S.find(s => s.id === id) || null; }
+function sname(id) { const s = sus(id); if (!s) return id || ''; return (s.g === 'person' && PUB.settings.names[id]) || s.name; }
+
+const ICON = {
+  person: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="24" cy="16" r="8"/><path d="M9 42c1.5-9 7.5-14 15-14s13.5 5 15 14"/><path d="M17 9c3-3 11-3 14 0"/></svg>',
+  library: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M6 11h13a5 5 0 0 1 5 5v23a4 4 0 0 0-4-4H6z"/><path d="M42 11H29a5 5 0 0 0-5 5v23a4 4 0 0 1 4-4h14z"/></svg>',
+  office: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="8" width="24" height="16" rx="2"/><path d="M24 24v5M18 29h12"/><path d="M4 33h40M8 33v9M40 33v9"/><path d="M30 33v-3h8v3"/></svg>',
+  staffroom: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20h24v12a9 9 0 0 1-9 9h-6a9 9 0 0 1-9-9z"/><path d="M33 23h3a5 5 0 0 1 0 10h-3"/><path d="M15 14c0-3 3-3 3-6M22 14c0-3 3-3 3-6"/><path d="M6 44h30"/></svg>',
+  garden: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 42V21"/><path d="M17 9c0 7 3 11 7 11s7-4 7-11l-3.5 3.5L24 7l-3.5 5.5z"/><path d="M24 35c-6 0-10-4-10-9 6 0 10 4 10 9zM24 31c5 0 9-3 9-8-5 0-9 3-9 8z"/><path d="M8 42h32"/></svg>',
+  wrench: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M30 6a10 10 0 0 0-9 13L7 33a4 4 0 0 0 6 6l14-14a10 10 0 0 0 13-9l-6 4-5-2-2-5z"/></svg>',
+  candy: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 42V18a8 8 0 0 1 16 0v3"/><path d="M12 36l6-5M12 28l8-7M14 19l6-6"/></svg>',
+  teapot: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M10 22h24c0 11-5 16-12 16s-12-5-12-16z"/><path d="M34 26c5-2 7 1 6 4s-4 4-7 3"/><path d="M10 26c-4-3-6-6-6-9"/><path d="M15 22c0-5 4-8 7-8s7 3 7 8"/><path d="M22 14v-3"/></svg>',
+  shovel: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M24 4v22"/><path d="M19 4h10"/><path d="M15 26h18v6c0 6-4 11-9 12-5-1-9-6-9-12z"/></svg>'
+};
+function iconFor(s) { return s.g === 'person' ? ICON.person : ICON[s.id]; }
+
+const ITEMS = [
+  { id: 'd1pm', day: 1, slot: 'pm', label: 'Wadsworth arrives' },
+  { id: 'd2am', day: 2, slot: 'am', label: 'The suspect list and Riddle No. 1' },
+  { id: 'd2mid', day: 2, slot: 'mid', label: 'Riddle answer and winner' },
+  { id: 'd2pm', day: 2, slot: 'pm', label: 'Interview: Colonel Mustard' },
+  { id: 'd3am', day: 3, slot: 'am', label: 'Two new puzzles' },
+  { id: 'd3mid', day: 3, slot: 'mid', label: 'Puzzle answers and winner' },
+  { id: 'd3pm', day: 3, slot: 'pm', label: 'Interview: Mrs. Peacock' },
+  { id: 'd4am', day: 4, slot: 'am', label: 'A message from Yvette' },
+  { id: 'd4mid', day: 4, slot: 'mid', label: 'Puzzle answers and winner' },
+  { id: 'd4pm', day: 4, slot: 'pm', label: 'Interview: Professor Plum and Ms. White' },
+  { id: 'd5am', day: 5, slot: 'am', label: 'The final clue' },
+  { id: 'd5fin', day: 5, slot: 'pm', label: 'Case closed' }
+];
+const SLOTNAME = { am: 'Morning announcements', mid: 'Midday announcement', pm: 'End-of-day announcements' };
+const TBMAP = { d2mid: 'r2', d3mid: 'r3', d4mid: 'r4' };
+const ROUNDS = {
+  r2: { day: 2, label: 'Day 2', opens: 'd2am', closes: 'd2mid', fields: [['a1', 'Answer to the riddle']], tbq: 'How many seconds can Wadsworth balance a teacup on his head before it wobbles off?', due: 'noon' },
+  r3: { day: 3, label: 'Day 3', opens: 'd3am', closes: 'd3mid', fields: [['a1', 'Answer to the episode riddle'], ['a2', 'Answer to the picture puzzle']], tbq: 'How many steps does it take Wadsworth to walk from the front doors to the library?', due: 'noon' },
+  r4: { day: 4, label: 'Day 4', opens: 'd4am', closes: 'd4mid', fields: [['a1', 'Answer to the episode riddle'], ['a2', 'Answer to the picture puzzle']], tbq: 'How many seconds did it take to walk 3 laps around the front foyer yesterday?', due: 'noon' },
+  final: { day: 5, label: 'Final day', opens: 'd5am', closes: 'd5fin', final: true, due: '1:00 p.m.' }
+};
+const RKEYS = ['r2', 'r3', 'r4', 'final'];
+const POSTERS = [['p3', 'Day 3 poster (off + ice)', 'd3am'], ['p4', 'Day 4 poster (staff + broom)', 'd4am']];
+
+const CHECK = {
+  1: ['Send the “having a little fun” email to staff (morning)', 'Rehearse Episode 1 with Wadsworth and the sound effects', 'Air Episode 1 at the end of the day', 'Release “Wadsworth arrives” on this site', 'After school, hang the suspect posters and Wadsworth’s letter', 'Send staff the link to this website', 'Pick the secret Day 2 tiebreaker number (teacup seconds) and enter it in Setup'],
+  2: ['Send the “1st Puzzle” staff email', 'Put Day 1 answer sheets in teacher boxes', 'Air Episode 2.1 and release the list and riddle', 'Collect answers by noon and crown a winner', 'Air Episode 2.2, release the answer, deliver the prize', 'Cross off the Candy Stick on the hallway posters', 'Arrange class coverage for Colonel Mustard', 'Air Episode 2.3 and release the interview', 'Count your steps from the front doors to the library (Day 3 tiebreaker) and enter it in Setup'],
+  3: ['Send the “Clue rolls on!” staff email', 'Hang the off-and-ice picture puzzle around the school', 'Put Day 2 answer sheets in teacher boxes', 'Air Episode 3.1 and release the puzzles', 'Collect answers by noon and crown a winner', 'Air Episode 3.2, release the answers, deliver the prize', 'Cross off the Wrench and the Office on the posters', 'Time yourself walking 3 laps of the front foyer (tomorrow’s tiebreaker) and enter it in Setup', 'Arrange class coverage for Mrs. Peacock', 'Air Episode 3.3 and release the interview'],
+  4: ['Send the “Keeping it going” staff email', 'Hang the staff-and-broom picture puzzle', 'Put Day 3 answer sheets in teacher boxes', 'Air Episode 4.1 with Yvette and release her message', 'Collect answers by noon and crown a winner', 'Air Episode 4.2, release the answers, deliver the prize', 'Cross off the Library and the Staffroom on the posters', 'Arrange coverage for Professor Plum and Ms. White', 'Air Episode 4.3 and release the interview', 'Rehearse the finale with Wadsworth and Ms. White (top secret)'],
+  5: ['Send the “Clue last day” staff email', 'Hand out the final solution sheets', 'Get the whole-school treat ready for lunch', 'Air Episode 5.1 with the final clue and release it', 'Collect final answers by 1:00 p.m. and pick the best story', 'Air the finale, Episode 5.2', 'Release “Case closed” and feature the winning story', 'Deliver the grand prize']
+};
+
+/* ---------- schedule ---------- */
+function dayDate(n) { const p = (PUB.settings.day1 || '2026-10-26').split('-').map(Number); const dt = new Date(p[0], p[1] - 1, p[2]); let added = 0; while (added < n - 1) { dt.setDate(dt.getDate() + 1); const w = dt.getDay(); if (w !== 0 && w !== 6) added++; } return dt; }
+function itemTime(it) { const dt = dayDate(it.day); const hm = (PUB.settings.times[it.slot] || '09:00').split(':').map(Number); dt.setHours(hm[0], hm[1] || 0, 0, 0); return dt; }
+function fmtDay(d) { return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }); }
+function fmtTime(d) { return d.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' }); }
+function isRel(id) { return !!PUB.released[id]; }
+function roundOpen(r) { const R = ROUNDS[r]; return isRel(R.opens) && !isRel(R.closes); }
+function eliminated() { const out = {}; ITEMS.forEach(it => { const c = PUB.released[it.id]; if (c && c.elim) c.elim.forEach(x => { out[x] = 1; }); }); return out; }
+function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function nextItem() { return ITEMS.find(it => !isRel(it.id)) || null; }
+
+/* ---------- state ---------- */
+let VIEW = location.hash === '#desk' ? 'desk' : 'public';
+let USER = null, CAN_EDIT = false, PUB_LOADED = false;
+let PHOTOS = {}, POSTER_IMG = {};
+let SEC = { content: null, answers: null, check: { done: {} }, loaded: false };
+let SUBS = [], EDITING = null, PEND = {}, DESK_UNSUBS = [], SHEET_KEY = null;
+let DESKTAB = LS.get('wps-desk-tab', 'show');
+let ROUNDTAB = LS.get('wps-round-tab', 'r2');
+let NOTES = LS.get('wps-notes', {});
+
+/* ---------- public page ---------- */
+function nav() {
+  const links = VIEW === 'desk'
+    ? '<a class="l" href="#top" data-go="public">Back to the case file</a>'
+    : '<a class="l" href="#board">Evidence</a><a class="l" href="#log">Case log</a><a class="l" href="#sheet">Answer sheet</a>';
+  return '<nav class="nav" aria-label="Site"><div class="wrap"><a class="brand" href="#top" data-go="public"><img src="apple-touch-icon.png" alt="" width="28" height="28">' + esc(PUB.settings.school || 'Our School') + ' Clue</a>' + links + (CAN_EDIT && VIEW !== 'desk' ? '<button class="desk-btn" type="button" data-go="desk">Producer desk</button>' : '') + '</div></nav>';
+}
+function dialHTML() {
+  let lastDay = 0; ITEMS.forEach(it => { if (isRel(it.id)) lastDay = it.day; });
+  let html = '<div class="dial" aria-label="Broadcast schedule"><div class="dial-scale"><div class="dial-line"></div>';
+  for (let d = 1; d <= 5; d++) {
+    const slots = ITEMS.filter(it => it.day === d);
+    html += '<div class="dial-day' + (d === lastDay ? ' now' : '') + '"><div class="ticks">' + slots.map(it => '<span class="' + (isRel(it.id) ? 'lit' : '') + '" title="' + esc(SLOTNAME[it.slot]) + '"></span>').join('') + '</div><b>DAY ' + d + '</b><small>' + esc(fmtDay(dayDate(d))) + '</small></div>';
+  }
+  const pos = lastDay ? ((lastDay - 0.5) / 5 * 100) : 2;
+  return html + '<div class="needle" style="left:calc(' + pos + '% - 1px)"></div></div></div>';
+}
+function mastHTML() {
+  const started = isRel('d1pm'), closed = isRel('d5fin'), nx = nextItem();
+  const lede = !started
+    ? 'Something odd is going on at ' + esc(PUB.settings.school || 'our school') + '. Keep your ears open during the announcements on ' + esc(fmtDay(dayDate(1))) + '.'
+    : closed ? 'The case is closed. Thank you, detectives. Scroll down to see what Wadsworth really saw.'
+      : 'Wadsworth, the school’s nighttime butler, saw something concerning late one night. The Butler’s Code won’t let him say what. Solve his puzzles with your class to cross suspects off the list.';
+  const next = nx ? '<p class="next"><span>Next broadcast</span><b>Day ' + nx.day + ' · ' + esc(fmtDay(itemTime(nx))) + ' · ' + esc(fmtTime(itemTime(nx))) + '</b><span>' + esc(nx.label) + '</span></p>' : '';
+  return '<header class="mast" id="top"><div class="wrap"><div class="mast-grid"><img class="mast-logo" src="logo.jpg" width="640" height="708" alt="Winchester Clue: Decode. Solve. Uncover. A knight holding a magnifying glass."><div class="mast-copy"><p class="eyebrow onair"><i aria-hidden="true"></i>On air · ' + esc(PUB.settings.school || 'Our School') + ' Radio Theatre presents</p><h1>What did the <em>butler</em> see?</h1><p class="lede">' + lede + '</p>' + next + '</div></div>' + dialHTML() + '</div></header>';
+}
+function paras(t) { return String(t || '').split(/\n\s*\n/).filter(x => x.trim()).map(x => '<p>' + esc(x.trim()) + '</p>').join(''); }
+function letterHTML() { return '<div class="letter"><p>Ladies and gentlemen,</p><p>Here is a carefully prepared list of persons, places and objects. Hidden among them are the three things I truly saw on that unfortunate night.</p><p>Over the coming days I shall give you puzzles and riddles. Each one you solve removes an item from the list. Solve them all and only three will remain. Those three will lead you to what happened that evening.</p><p>I wish you the very best of luck.</p><p class="sig">Yours faithfully,<br>Wadsworth the Butler</p></div>'; }
+function itemCard(it, c, opts) {
+  opts = opts || {};
+  let h = '<article class="entry" id="e-' + it.id + '"><div class="when">' + esc(SLOTNAME[it.slot]) + ' · ' + esc(fmtDay(itemTime(it))) + '</div><h3>' + esc(c.title) + '</h3>' + paras(c.body);
+  if (c.letter) h += letterHTML();
+  (c.riddles || []).forEach(r => {
+    const img = r.posterKey && (opts.posterImg ? opts.posterImg[r.posterKey] : POSTER_IMG[r.posterKey]);
+    h += '<figure class="riddle"><figcaption>' + esc(r.label) + '</figcaption>' + (r.text ? '<blockquote>“' + esc(r.text) + '”</blockquote>' : '') + (img ? '<img src="' + img + '" alt="' + esc(r.alt || r.label) + '">' : (r.posterKey ? '<p>Find this puzzle on the posters around the school.</p>' : '')) + '</figure>';
+  });
+  if (c.statement && c.statement.points && c.statement.points.length) h += '<div><p class="points-h">' + esc(c.statement.who) + '</p><ul class="points">' + c.statement.points.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul></div>';
+  if (c.elim && c.elim.length && !c.solution) h += '<div class="chips"><span class="muted">Crossed off:</span>' + c.elim.map(x => '<span class="chip x">' + esc(sname(x)) + '</span>').join('') + '</div>';
+  if (c.tbAnswer != null && c.tbAnswer !== '') h += '<p class="tb">Tiebreaker answer: <b class="tabnum">' + esc(c.tbAnswer) + '</b></p>';
+  const w = TBMAP[it.id] && PUB.winners[TBMAP[it.id]];
+  if (w && w.cls && !opts.noWinner) h += '<p class="ok-note">Today’s winning class: ' + esc(w.cls) + '</p>';
+  return h + '</article>';
+}
+function closedHTML() {
+  const c = PUB.released.d5fin; if (!c) return '';
+  const sol = c.solution || {}, f = PUB.winners.final;
+  return '<section class="band" id="closed"><div class="wrap"><div class="closed"><span class="big">Case closed</span><div class="solution"><span>' + esc(sname(sol.person)) + '</span><span>on ' + esc(sname(sol.place).replace(/^The /, 'the ')) + '</span><span>with ' + esc(sname(sol.thing).replace(/^The /, 'the ')) + '</span></div>' + paras(c.body) + (f && f.cls ? '<div><p class="points-h">Grand prize winner: ' + esc(f.cls) + '</p>' + (f.story ? '<blockquote class="story">' + esc(f.story) + '</blockquote>' : '') + '</div>' : '') + '</div></div></section>';
+}
+function boardHTML() {
+  if (!isRel('d2am')) return '';
+  const el = eliminated(), closed = isRel('d5fin'), sol = (closed && PUB.released.d5fin.solution) || {};
+  const seen = {}; if (closed) { seen[sol.person] = 1; seen[sol.place] = 1; seen[sol.thing] = 1; }
+  let h = '<section class="band" id="board"><div class="wrap"><div class="sec-head"><div><p class="eyebrow muted">Wadsworth’s list</p><h2>The evidence board</h2></div><p class="muted">Three of these twelve are what Wadsworth really saw. A red stamp means the whole school has proved he did not see it. Tap a card to pencil in your own class notes; only this device can see them.</p></div>';
+  [['person', 'People'], ['place', 'Places'], ['thing', 'Things']].forEach(g => {
+    h += '<div class="board-group"><h3>' + g[1] + '</h3><div class="cards">';
+    S.filter(s => s.g === g[0]).forEach(s => {
+      const out = !!el[s.id] && !seen[s.id], ph = PHOTOS[s.id], n = NOTES[s.id], actor = s.g === 'person' && PUB.settings.actors[s.id];
+      h += '<button type="button" class="card' + (out ? ' out' : '') + (seen[s.id] ? ' seen' : '') + '" data-note="' + s.id + '" aria-label="' + esc(sname(s.id)) + (out ? ', crossed off' : '') + '"><div class="pic">' + (ph ? '<img src="' + ph + '" alt="">' : iconFor(s)) + '</div><div class="nm">' + esc(sname(s.id)) + '</div>' + (s.note ? '<div class="nt">' + esc(s.note) + '</div>' : '') + (actor ? '<div class="by">' + esc(actor) + '</div>' : '') + (out ? '<span class="stamp">NOT SEEN</span>' : '') + (seen[s.id] ? '<span class="stamp seen">SEEN</span>' : '') + (n && !out && !seen[s.id] ? '<span class="pencil">' + (n === 'sus' ? 'sus?' : 'ruled out') + '</span>' : '') + '</button>';
+    });
+    h += '</div></div>';
+  });
+  h += '<div class="notebar"><span>Your notes: tap once for “sus?”, twice for “ruled out”, three times to clear.</span><button type="button" data-clearnotes="1">Clear my notes</button></div>';
+  return h + '</div></section>';
+}
+function logHTML() {
+  const rel = ITEMS.filter(it => isRel(it.id) && it.id !== 'd5fin');
+  if (!rel.length) return '<section class="band" id="log"><div class="wrap"><div class="sec-head"><div><p class="eyebrow muted">Case log</p><h2>Nothing on the record yet</h2></div></div><p class="muted">Every clue, answer and witness statement will be logged here right after it airs. The first broadcast is ' + esc(fmtDay(dayDate(1))) + ' at the end of the day.</p></div></section>';
+  let h = '<section class="band" id="log"><div class="wrap"><div class="sec-head"><div><p class="eyebrow muted">Case log</p><h2>Clues and statements</h2></div><p class="muted">Newest first. Missed an announcement? Everything that has aired is here.</p></div><div class="log">';
+  for (let d = 5; d >= 1; d--) {
+    const its = rel.filter(it => it.day === d).reverse(); if (!its.length) continue;
+    h += '<div class="log-day"><div class="lbl">Day ' + d + '<small>' + esc(fmtDay(dayDate(d))) + '</small></div><div class="entries">' + its.map(it => itemCard(it, PUB.released[it.id])).join('') + '</div></div>';
+  }
+  return h + '</div></div></section>';
+}
+function hallHTML() {
+  const ws = RKEYS.filter(r => PUB.winners[r] && PUB.winners[r].cls);
+  if (!ws.length) return '';
+  return '<section class="band" id="hall"><div class="wrap"><div class="sec-head"><div><p class="eyebrow muted">Hall of fame</p><h2>Winning detectives</h2></div></div><div class="hall">' + ws.map(r => '<div class="trophy"><span class="r">' + esc(ROUNDS[r].final ? 'Grand prize' : ROUNDS[r].label + ' puzzle') + '</span><b>' + esc(PUB.winners[r].cls) + '</b></div>').join('') + '</div></div></section>';
+}
+function classField(id, sel, hint) {
+  const classes = PUB.settings.classes || [];
+  if (!classes.length) return '<input type="text" id="' + id + '" required maxlength="80" placeholder="Room 104, Ms. Patel" value="' + esc(sel || '') + '">' + (hint ? '<span class="hint">Use the same name every day so the office can match your answers.</span>' : '');
+  const opts = classes.slice();
+  if (sel && opts.indexOf(sel) < 0) sel = '';
+  return '<select id="' + id + '" required><option value="">Choose your class\u2026</option>' + opts.map(c => '<option value="' + esc(c) + '"' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select>' + (hint ? '<span class="hint">Don\u2019t see your class? Ask the office to add it.</span>' : '');
+}
+function optList(group, sel) {
+  const groups = group ? [group] : ['person', 'place', 'thing'], lab = { person: 'People', place: 'Places', thing: 'Things' };
+  return '<option value="">Choose one…</option>' + groups.map(g => '<optgroup label="' + lab[g] + '">' + S.filter(s => s.g === g).map(s => '<option value="' + s.id + '"' + (sel === s.id ? ' selected' : '') + '>' + esc(sname(s.id)) + '</option>').join('') + '</optgroup>').join('');
+}
+function sheetHTML() {
+  const open = RKEYS.filter(roundOpen);
+  let h = '<section class="band" id="sheet"><div class="wrap"><div class="sec-head"><div><p class="eyebrow muted">For teachers</p><h2>Class answer sheet</h2></div><p class="muted">Agree on one answer as a class, then send it in here. A paper sheet in the office works too.</p></div>';
+  if (!open.length) {
+    const nx = RKEYS.find(r => !isRel(ROUNDS[r].opens));
+    h += '<div class="sheet"><p><b>No answer sheet is open right now.</b></p><p class="muted">' + (nx ? 'The next one opens with the morning announcements on Day ' + ROUNDS[nx].day + ' (' + esc(fmtDay(dayDate(ROUNDS[nx].day))) + ').' : 'All answers are in. Thanks for playing!') + '</p></div>';
+    return h + '</div></section>';
+  }
+  const r = open[open.length - 1], R = ROUNDS[r], cls = LS.get('wps-cls', ''), mine = LS.get('wps-sent', {})[r];
+  h += '<form class="sheet" id="subform" data-sheetround="' + r + '"><p class="eyebrow muted">' + esc(R.label) + ' · due by ' + esc(R.due) + '</p><div class="field"><label for="f-cls">Class</label>' + classField('f-cls', cls, true) + '</div>';
+  if (R.final) {
+    h += '<div class="row2"><div class="field"><label for="f-person">Who</label><select id="f-person" required>' + optList('person', mine && mine.person) + '</select></div><div class="field"><label for="f-place">Where</label><select id="f-place" required>' + optList('place', mine && mine.place) + '</select></div><div class="field"><label for="f-thing">With what</label><select id="f-thing" required>' + optList('thing', mine && mine.thing) + '</select></div></div><div class="field"><label for="f-story">What did Wadsworth see?</label><textarea id="f-story" required maxlength="3000" placeholder="One sentence or a few paragraphs. The closest, best or funniest story wins.">' + esc(mine && mine.story || '') + '</textarea></div>';
+  } else {
+    h += '<div class="row2">' + R.fields.map(f => '<div class="field"><label for="f-' + f[0] + '">' + esc(f[1]) + '</label><select id="f-' + f[0] + '" required>' + optList(null, mine && mine[f[0]]) + '</select></div>').join('') + '</div><div class="field"><label for="f-tb">Tiebreaker</label><span class="hint">' + esc(R.tbq) + '</span><input type="number" id="f-tb" required inputmode="numeric" min="0" step="1" value="' + esc(mine && mine.tb || '') + '"></div>';
+  }
+  h += '<button class="btn brass" type="submit" id="f-submit">Submit our answer</button><div id="sendres" aria-live="polite">' + (mine ? '<p class="ok-note">Your class already sent an answer from this device. Submit again to change it; the office uses your latest one.</p>' : '') + '</div></form>';
+  return h + '</div></section>';
+}
+function setupBanner() {
+  if (CONFIGURED) return '';
+  return '<div class="wrap" style="padding-block:16px"><div class="due-banner"><span><b>This site isn’t connected to Firebase yet.</b> Paste your Firebase web config at the top of <code>index.html</code>. The README has the steps.</span></div></div>';
+}
+function renderPublic() {
+  const app = $('#app');
+  app.innerHTML = nav() + setupBanner() + '<div id="pub-top"></div><div id="pub-sheet"></div><footer class="foot"><div class="wrap footrow"><span>' + esc(PUB.settings.school || 'Our School') + ' Clue week. Good luck, detectives.</span><button type="button" class="linkbtn" data-signin="1">' + (USER ? (CAN_EDIT ? 'Sign out of the producer desk' : 'Sign out') : 'Producer sign-in') + '</button></div></footer>';
+  renderTop(); SHEET_KEY = null; renderSheet(true);
+}
+function renderTop() {
+  const el = $('#pub-top'); if (!el) return;
+  el.innerHTML = PUB_LOADED || !CONFIGURED ? mastHTML() + closedHTML() + boardHTML() + logHTML() + hallHTML() : '<header class="mast" id="top"><div class="wrap"><div class="mast-grid"><img class="mast-logo" src="logo.jpg" width="640" height="708" alt="Winchester Clue: Decode. Solve. Uncover."><div class="mast-copy"><p class="eyebrow onair"><i aria-hidden="true"></i>Tuning in…</p><h1>What did the <em>butler</em> see?</h1></div></div></div></header>';
+}
+function renderSheet(force) {
+  const el = $('#pub-sheet'); if (!el) return;
+  const key = RKEYS.filter(roundOpen).join(',') + '|' + PUB_LOADED + '|' + (PUB.settings.classes || []).join('\n');
+  if (!force && key === SHEET_KEY) return;
+  SHEET_KEY = key; el.innerHTML = PUB_LOADED ? sheetHTML() : '';
+}
+async function onSubmit(form) {
+  const r = form.getAttribute('data-sheetround'), R = ROUNDS[r], btn = $('#f-submit');
+  const e = { round: r, cls: $('#f-cls').value.trim().slice(0, 80), src: 'Website' };
+  if (!e.cls) { toast('Add your class name first.'); return; }
+  if (R.final) { e.person = $('#f-person').value; e.place = $('#f-place').value; e.thing = $('#f-thing').value; e.story = $('#f-story').value.trim().slice(0, 3000); }
+  else { R.fields.forEach(f => { e[f[0]] = $('#f-' + f[0]).value; }); e.tb = String($('#f-tb').value).slice(0, 12); }
+  LS.set('wps-cls', e.cls);
+  if (!db) { toast('The site isn’t connected yet.'); return; }
+  btn.disabled = true;
+  try {
+    await addDoc(collection(db, 'subs'), Object.assign({}, e, { at: serverTimestamp() }));
+    const sent = LS.get('wps-sent', {}); sent[r] = e; LS.set('wps-sent', sent);
+    $('#sendres').innerHTML = '<p class="ok-note">Got it. The office has ' + esc(e.cls) + '’s answer. You can change it any time before the deadline.</p>';
+  } catch (err) {
+    $('#sendres').innerHTML = '<p class="due-banner" style="display:block">' + (err && err.code === 'permission-denied' ? 'The answer wasn\u2019t sent. Either this answer sheet has closed, or the class list just changed; reload the page and try again.' : 'The answer didn’t send. Check the internet connection and try again, or hand a paper sheet to the office.') + '</p>';
+  } finally { btn.disabled = false; }
+}
+
+/* ---------- producer desk ---------- */
+function renderDesk() {
+  const tabs = [['show', 'Run of show'], ['answers', 'Answers and winners'], ['sound', 'Soundboard'], ['setup', 'Setup']];
+  $('#app').innerHTML = nav() + '<header class="desk-head"><div class="wrap"><p class="eyebrow" style="color:var(--glow)">Producer only · signed in as ' + esc(USER && USER.email) + '</p><h1>Producer desk</h1><p>Release each broadcast after it airs, score the answer sheets, play sound effects, and set up photos and posters. Answers and unreleased clues stay locked until you release them. Every open copy of the site updates the moment you do.</p><div class="tabs" role="tablist">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (DESKTAB === t[0]) + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div></div></header><main class="wrap panel" id="panel"></main>';
+  renderPanel();
+}
+function renderPanel() {
+  const p = $('#panel'); if (!p) return;
+  if (DESKTAB === 'show') p.innerHTML = showHTML();
+  else if (DESKTAB === 'answers') p.innerHTML = answersHTML();
+  else if (DESKTAB === 'sound') { p.innerHTML = soundHTML(); loadPads(); }
+  else { p.innerHTML = setupHTML(); loadPosterThumbs(); }
+}
+function statusOf(it) { if (isRel(it.id)) return 'live'; return itemTime(it) <= new Date() ? 'due' : 'sched'; }
+function showHTML() {
+  if (!SEC.loaded) return '<p class="muted">Opening the secret case file…</p>';
+  if (!SEC.content) return '<div class="box"><h3>Load the case file first</h3><p>The clues and answers aren’t in the database yet. Go to <b>Setup</b> and load <code>clue-casefile.json</code>.</p><button class="btn sm" type="button" data-tab="setup">Go to Setup</button></div>';
+  const due = ITEMS.filter(it => statusOf(it) === 'due');
+  let h = '';
+  if (due.length) h += '<div class="due-banner"><span><b>' + due.length + ' broadcast' + (due.length > 1 ? 's are' : ' is') + ' due.</b> Release once it has aired so the case log matches the announcements.</span><button class="btn sm brass" type="button" data-release="' + due.map(i => i.id).join(',') + '">Release all due</button></div>';
+  const today = new Date(), done = SEC.check.done || {};
+  for (let d = 1; d <= 5; d++) {
+    const dd = dayDate(d), its = ITEMS.filter(it => it.day === d);
+    h += '<section class="day-block" aria-label="Day ' + d + '"><header><h3>Day ' + d + '</h3><span class="muted">' + esc(fmtDay(dd)) + '</span>' + (sameDay(dd, today) ? '<span class="today">TODAY</span>' : '') + '</header><div class="day-body"><div class="rel-list"><h4>Broadcasts</h4>';
+    its.forEach(it => {
+      const st = statusOf(it);
+      h += '<div class="rel"><div class="rel-top"><span class="t tabnum">' + esc(fmtTime(itemTime(it))) + '</span><span class="lab">' + esc(it.label) + '</span><span class="pill ' + st + '">' + (st === 'live' ? 'Released' : st === 'due' ? 'Due' : 'Scheduled') + '</span></div><div class="btnrow">' + (st === 'live' ? '<button class="btn sm ghost" type="button" data-unrelease="' + it.id + '">Take down</button>' : '<button class="btn sm" type="button" data-release="' + it.id + '">Release now</button>') + '<button class="btn sm ghost" type="button" data-preview="' + it.id + '">Preview</button><button class="btn sm ghost" type="button" data-edit="' + it.id + '">Edit wording</button></div><div id="pv-' + it.id + '"></div></div>';
+    });
+    h += '</div><div class="check-list"><h4>To do</h4>' + (CHECK[d] || []).map((t, i) => { const k = d + '-' + i; return '<label class="check"><input type="checkbox" id="ck-' + k + '" data-check="' + k + '"' + (done[k] ? ' checked' : '') + '><span>' + esc(t) + '</span></label>'; }).join('') + '</div></div></section>';
+  }
+  h += '<div class="box"><h3>Rehearsal reset</h3><p class="muted">Practised a release? This takes every broadcast and winner off the public site and hides the picture puzzles again.</p><label class="check"><input type="checkbox" id="reset-subs"><span>Also delete every answer sheet received so far</span></label><div class="btnrow" id="resetrow"><button class="btn sm danger" type="button" data-reset="ask">Reset the public site…</button></div></div>';
+  return h;
+}
+function contentFor(id) {
+  const c = clone((SEC.content && SEC.content.items && SEC.content.items[id]) || {});
+  const rk = TBMAP[id];
+  if (rk && SEC.answers && SEC.answers[rk] && SEC.answers[rk].tb != null && SEC.answers[rk].tb !== '') c.tbAnswer = SEC.answers[rk].tb;
+  return c;
+}
+async function pubUpdate(obj, msg) {
+  try { await updateDoc(doc(db, 'public', 'state'), obj); if (msg) toast(msg); return true; }
+  catch (e) { toast('Couldn’t update the site: ' + (e.code || e.message), 6000); return false; }
+}
+async function setPosterReleased(ids, val) {
+  for (const id of ids) {
+    const c = SEC.content && SEC.content.items && SEC.content.items[id];
+    for (const r of ((c && c.riddles) || [])) if (r.posterKey) { try { await updateDoc(doc(db, 'posters', r.posterKey), { released: val }); } catch (e) {} }
+  }
+}
+async function releaseIds(ids) {
+  if (!SEC.content) { toast('Load the case file in Setup first.'); return; }
+  const upd = {};
+  ids.forEach(id => { const c = contentFor(id); if (!c.title) return; c.at = new Date().toISOString(); upd['released.' + id] = c; });
+  await setPosterReleased(ids, true);
+  await pubUpdate(upd, 'Released. Every open copy of the site now shows it.');
+}
+
+/* answers */
+function tsMillis(t) { if (!t) return 0; if (typeof t.toMillis === 'function') return t.toMillis(); return Date.parse(t) || 0; }
+function allRows(r) {
+  const latest = {}, counts = {};
+  SUBS.filter(s => s.round === r).forEach(s => {
+    const k = String(s.cls || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    counts[k] = (counts[k] || 0) + 1;
+    if (!latest[k] || tsMillis(s.at) >= tsMillis(latest[k].at)) latest[k] = s;
+  });
+  const A = SEC.answers && SEC.answers[r];
+  const rows = Object.keys(latest).map(k => Object.assign({}, latest[k], { times: counts[k] }));
+  rows.forEach(x => {
+    if (r === 'final') { const f = A || {}; x.ok = !!(x.person === f.person && x.place === f.place && x.thing === f.thing); }
+    else {
+      const want = ((A && A.a) || []).slice().sort().join(','), got = [x.a1, x.a2].filter(Boolean).sort().join(',');
+      x.ok = !!want && want === got;
+      const tb = Number(x.tb), ans = A && A.tb;
+      x.diff = (ans != null && ans !== '' && x.tb !== '' && x.tb != null && !isNaN(tb)) ? Math.abs(tb - Number(ans)) : null;
+    }
+  });
+  rows.sort((a, b) => { if (a.ok !== b.ok) return a.ok ? -1 : 1; const da = a.diff == null ? 1e15 : a.diff, dbb = b.diff == null ? 1e15 : b.diff; if (da !== dbb) return da - dbb; return tsMillis(a.at) - tsMillis(b.at); });
+  return rows;
+}
+function answersHTML() {
+  if (!SEC.loaded) return '<p class="muted">Opening the answer sheets…</p>';
+  const r = ROUNDTAB, R = ROUNDS[r], rows = allRows(r), A = SEC.answers && SEC.answers[r], w = PUB.winners[r];
+  let h = '<div class="btnrow">' + RKEYS.map(k => '<button type="button" class="btn sm ' + (k === r ? '' : 'ghost') + '" data-rtab="' + k + '">' + esc(ROUNDS[k].label) + ' (' + allRows(k).length + ')</button>').join('') + '</div>';
+  h += '<div class="box"><div class="winner-line">' + (w && w.cls ? '<span>Winner on the public site: ' + esc(w.cls) + '</span><button class="btn sm ghost" type="button" data-uncrown="' + r + '">Remove winner</button>' : '<span class="muted">No winner announced yet for ' + esc(R.label) + '.</span>') + '</div>';
+  if (!R.final) h += '<p class="muted">Correct answer: <b>' + esc(((A && A.a) || []).map(sname).join(' and ') || 'not set') + '</b> · Tiebreaker: <b class="tabnum">' + esc(A && A.tb != null && A.tb !== '' ? A.tb : 'not set yet') + '</b>' + (!(A && A.tb != null && A.tb !== '') ? ' (enter it in Setup > Secret settings)' : '') + '. Correct answers sort to the top, closest tiebreaker first. You can crown any correct class, so feel free to spread the wins around. If a class sent more than once, only its latest answer counts.</p>';
+  else h += '<p class="muted">Correct trio: <b>' + esc(A ? [A.person, A.place, A.thing].map(sname).join(', ') : 'not set') + '</b>. Read the stories and feature the best one; it appears on the public site once you release “Case closed”.</p>';
+  h += '</div>';
+  if (!rows.length) h += '<p class="muted">No answers yet. Teachers submit from the answer sheet on the public site, and you can type in paper sheets below.</p>';
+  else {
+    h += '<div class="tablewrap"><table><thead><tr><th>Class</th>' + (R.final ? '<th>Who, where, what</th><th>Story</th>' : '<th>Answer</th><th class="num">Tiebreaker</th><th class="num">Off by</th>') + '<th>Right?</th><th>From</th><th></th></tr></thead><tbody>';
+    rows.forEach(x => {
+      const crowned = w && w.cls === x.cls;
+      h += '<tr class="' + (crowned ? 'crowned' : '') + '"><td>' + esc(x.cls) + (x.times > 1 ? ' <span class="muted">(sent ' + x.times + '×)</span>' : '') + '</td>' + (R.final ? '<td>' + esc([x.person, x.place, x.thing].map(sname).join(', ')) + '</td><td style="min-width:240px;max-width:420px;white-space:pre-wrap">' + esc(x.story || '') + '</td>' : '<td>' + esc([x.a1, x.a2].filter(Boolean).map(sname).join(', ')) + '</td><td class="num">' + esc(x.tb) + '</td><td class="num">' + (x.diff == null ? '—' : esc(x.diff)) + '</td>') + '<td class="' + (x.ok ? 'yes' : 'no') + '">' + (x.ok ? 'Yes' : 'No') + '</td><td class="muted">' + esc(x.src || 'Website') + '</td><td><div class="btnrow">' + (crowned ? '<span class="pill live">Winner</span>' : '<button class="btn sm" type="button" data-crown="' + esc(x.id) + '">' + (R.final ? 'Feature' : 'Crown') + '</button>') + '<button class="btn sm ghost" type="button" data-delsub="' + esc(x.id) + '">Remove</button></div></td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+  h += '<form class="box" id="paperform"><h3>Type in a paper sheet</h3><div class="field"><label for="pp-cls">Class</label>' + classField('pp-cls', '', false) + '</div>' + (R.final ? '<div class="row2"><div class="field"><label for="pp-person">Who</label><select id="pp-person">' + optList('person') + '</select></div><div class="field"><label for="pp-place">Where</label><select id="pp-place">' + optList('place') + '</select></div><div class="field"><label for="pp-thing">With what</label><select id="pp-thing">' + optList('thing') + '</select></div></div><div class="field"><label for="pp-story">Story</label><textarea id="pp-story"></textarea></div>' : '<div class="row2">' + R.fields.map(f => '<div class="field"><label for="pp-' + f[0] + '">' + esc(f[1]) + '</label><select id="pp-' + f[0] + '">' + optList() + '</select></div>').join('') + '<div class="field"><label for="pp-tb">Tiebreaker</label><input type="number" id="pp-tb"></div></div>') + '<button class="btn sm" type="submit">Add sheet</button></form>';
+  return h;
+}
+
+/* soundboard */
+const SLOTS = [['start', 'Episode start'], ['drama', 'Dramatic exclamation'], ['exit', 'Character exit / enter'], ['end', 'Episode exit music'], ['sus', 'Among Us “sus”'], ['final', 'Final clue (Day 5)']];
+let PLAYING = null, PLAYKEY = null, IDB = null;
+function idb() { return new Promise((res, rej) => { if (IDB) return res(IDB); try { const rq = indexedDB.open('wps-clue-sounds', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('clips'); rq.onsuccess = () => { IDB = rq.result; res(IDB); }; rq.onerror = () => rej(rq.error); } catch (e) { rej(e); } }); }
+function idbGet(k) { return idb().then(d => new Promise(res => { const t = d.transaction('clips').objectStore('clips').get(k); t.onsuccess = () => res(t.result || null); t.onerror = () => res(null); })).catch(() => null); }
+function idbPut(k, v) { return idb().then(d => new Promise((res, rej) => { const tx = d.transaction('clips', 'readwrite'); tx.objectStore('clips').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); })); }
+function idbDel(k) { return idb().then(d => new Promise(res => { const tx = d.transaction('clips', 'readwrite'); tx.objectStore('clips').delete(k); tx.oncomplete = () => res(); })).catch(() => {}); }
+function soundHTML() {
+  return '<div class="box"><h3>Soundboard</h3><p class="muted">Load the sound effects from your download page once, then play them from this computer during the announcements. Press 1 to 6 on the keyboard, or Esc to stop. The files stay on this computer only.</p><div class="btnrow"><button class="btn sm ghost" type="button" data-stopall="1">Stop all sound</button></div></div><div class="pads">' + SLOTS.map((s, i) => '<div class="pad"><button class="play" type="button" data-play="' + s[0] + '" id="pad-' + s[0] + '" disabled><span class="k">' + (i + 1) + '</span><span>' + esc(s[1]) + '</span></button><span class="fn" id="fn-' + s[0] + '">No file loaded</span><input type="file" accept="audio/*,video/mp4,video/webm" id="file-' + s[0] + '" data-load="' + s[0] + '" aria-label="Choose a file for ' + esc(s[1]) + '"><button class="btn sm ghost" type="button" data-unload="' + s[0] + '">Remove</button></div>').join('') + '</div>';
+}
+function loadPads() { SLOTS.forEach(s => { idbGet(s[0]).then(v => { const b = $('#pad-' + s[0]), fn = $('#fn-' + s[0]); if (!b) return; b.disabled = !v; fn.textContent = v ? v.name : 'No file loaded'; }); }); }
+function stopAll() { if (PLAYING) { try { PLAYING.pause(); } catch (e) {} } PLAYING = null; PLAYKEY = null; $$('.pad .play.on').forEach(b => b.classList.remove('on')); }
+function play(k) {
+  if (PLAYKEY === k && PLAYING) { stopAll(); return; }
+  stopAll();
+  idbGet(k).then(v => {
+    if (!v) return;
+    const a = new Audio(URL.createObjectURL(v.blob)); PLAYING = a; PLAYKEY = k;
+    const b = $('#pad-' + k); if (b) b.classList.add('on');
+    a.onended = () => { if (b) b.classList.remove('on'); if (PLAYKEY === k) { PLAYING = null; PLAYKEY = null; } };
+    a.play().catch(() => toast('This file type can’t play here. Try an MP3.'));
+  });
+}
+
+/* setup */
+function setupHTML() {
+  const st = PUB.settings, ans = SEC.answers || {};
+  let h = '';
+  h += '<div class="box"><h3>Case file</h3>' + (SEC.content ? '<p class="ok-note">The clues and answers are loaded.</p><p class="muted">Loading the file again replaces the clue wording and answers (including any wording you edited and the lap time). The checklist, answer sheets and photos are kept.</p>' : '<p>Load <code>clue-casefile.json</code> to put the clues and answer key into the database. Keep that file out of your GitHub repo: anyone can read a public repo.</p>') + '<div class="field"><label for="casefile">Case file (.json)</label><input type="file" accept="application/json,.json" id="casefile" data-casefile="1"></div></div>';
+  h += '<form class="setup-grid" id="setupform"><div class="box"><h3>The basics</h3><div class="row2"><div class="field"><label for="s-school">School name</label><input type="text" id="s-school" value="' + esc(st.school || '') + '"></div><div class="field"><label for="s-day1">Day 1 (first afternoon episode)</label><input type="date" id="s-day1" value="' + esc(st.day1 || '') + '"><span class="hint">Day 5 lands four school days later. Weekends are skipped.</span></div></div><div class="row2"><div class="field"><label for="s-am">Morning announcements</label><input type="time" id="s-am" value="' + esc(st.times.am) + '"></div><div class="field"><label for="s-mid">Midday announcement</label><input type="time" id="s-mid" value="' + esc(st.times.mid) + '"></div><div class="field"><label for="s-pm">End-of-day announcements</label><input type="time" id="s-pm" value="' + esc(st.times.pm) + '"></div></div></div>';
+  h += '<div class="box"><h3>Classes</h3><p class="muted">One class per line, exactly as you want it to appear, for example <code>Room 104 \u00b7 Ms. Patel</code>. Teachers pick from this list on the answer sheet, so every answer lines up. Add a line such as <code>Staff \u00b7 Mr. Lee</code> for staff playing on their own. Leave it empty to let teachers type their class instead.</p><div class="field"><label for="s-classes">Class list</label><textarea id="s-classes" style="min-height:220px">' + esc((st.classes || []).join('\n')) + '</textarea></div></div><div class="box"><h3>Suspects and places</h3><p class="muted">Rename a suspect if needed (Ms. White can become Mr. White), add who plays each one, and upload photos for the evidence board. Anyone with the site link can see these.</p><div class="photos">' + S.filter(s => s.g !== 'thing').map(s => { const ph = s.id in PEND ? PEND[s.id] : PHOTOS[s.id]; return '<div class="ph"><div class="pic" id="php-' + s.id + '">' + (ph ? '<img src="' + ph + '" alt="">' : iconFor(s)) + '</div>' + (s.g === 'person' ? '<input type="text" id="s-name-' + s.id + '" aria-label="Name on the board" value="' + esc(st.names[s.id] || s.name) + '"><input type="text" id="s-actor-' + s.id + '" aria-label="Played by" placeholder="Played by…" value="' + esc(st.actors[s.id] || '') + '">' : '<b>' + esc(s.name) + '</b>') + '<input type="file" accept="image/*" id="s-photo-' + s.id + '" data-photo="' + s.id + '" aria-label="Photo for ' + esc(s.name) + '">' + (ph ? '<button class="btn sm ghost" type="button" data-clearphoto="' + s.id + '">Remove photo</button>' : '') + '</div>'; }).join('') + '</div></div>';
+  h += '<div class="btnrow"><button class="btn brass" type="submit">Save</button><span class="muted">Updates the public site right away.</span></div></form>';
+  h += '<div class="box"><h3>Secret settings</h3><p class="muted">Not shown on the public site until you release the answer.</p><div class="row2">' + [['r2','Day 2: seconds Wadsworth balances a teacup'],['r3','Day 3: steps from the front doors to the library'],['r4','Day 4: seconds for 3 front-foyer laps']].map(x => '<div class="field"><label for="s-tb-' + x[0] + '">' + x[1] + '</label><input type="number" id="s-tb-' + x[0] + '" min="0" step="1" value="' + esc(ans[x[0]] && ans[x[0]].tb != null ? ans[x[0]].tb : '') + '"></div>').join('') + '</div><p class="muted">Make up the teacup number; measure the steps and the laps. Nobody can check these, so the closest guess is simply the closest to your number.</p><button class="btn sm" type="button" data-savelap="1">Save tiebreaker answers</button></div>';
+  h += '<div class="box"><h3>Picture puzzles</h3><p class="muted">Upload the two poster puzzles from the Posters of Clues file (a screenshot or photo is fine). They stay hidden until you release that morning’s broadcast.</p><div class="photos">' + POSTERS.map(p => '<div class="ph"><div class="pic" id="post-' + p[0] + '">Not uploaded</div><b>' + esc(p[1]) + '</b><input type="file" accept="image/*" id="s-post-' + p[0] + '" data-poster="' + p[0] + '" aria-label="Upload ' + esc(p[1]) + '"></div>').join('') + '</div></div>';
+  return h;
+}
+function loadPosterThumbs() { POSTERS.forEach(p => { getDoc(doc(db, 'posters', p[0])).then(s => { const el = $('#post-' + p[0]); if (el && s.exists() && s.data().data) el.innerHTML = '<img src="' + s.data().data + '" alt="">'; }).catch(() => {}); }); }
+function loadImg(file) { return new Promise((res, rej) => { const img = new Image(), u = URL.createObjectURL(file); img.onload = () => { URL.revokeObjectURL(u); res(img); }; img.onerror = () => rej(new Error('That file isn’t an image this browser can read.')); img.src = u; }); }
+async function shrink(file, max, q) { const img = await loadImg(file); const w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, max / Math.max(w, h)); const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q || 0.82); }
+async function cropSquare(file, size) { const img = await loadImg(file); const w = img.naturalWidth, h = img.naturalHeight, m = Math.min(w, h); const c = document.createElement('canvas'); c.width = size; c.height = size; c.getContext('2d').drawImage(img, (w - m) / 2, (h - m) / 2.6, m, m, 0, 0, size, size); return c.toDataURL('image/jpeg', 0.82); }
+
+/* ---------- events ---------- */
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-go],[data-note],[data-clearnotes],[data-signin],[data-tab],[data-release],[data-unrelease],[data-preview],[data-edit],[data-saveedit],[data-canceledit],[data-rtab],[data-crown],[data-uncrown],[data-delsub],[data-play],[data-stopall],[data-unload],[data-clearphoto],[data-savelap],[data-reset]');
+  if (!t) return;
+  const a = t.dataset;
+  if (a.go) {
+    ev.preventDefault();
+    VIEW = a.go === 'desk' && CAN_EDIT ? 'desk' : 'public';
+    history.replaceState(null, '', VIEW === 'desk' ? '#desk' : '#top'); render(); scrollTo(0, 0); return;
+  }
+  if (a.note) { const cur = NOTES[a.note]; if (!cur) NOTES[a.note] = 'sus'; else if (cur === 'sus') NOTES[a.note] = 'out'; else delete NOTES[a.note]; LS.set('wps-notes', NOTES); const y = scrollY; renderTop(); scrollTo(0, y); const b = $('[data-note="' + a.note + '"]'); if (b) b.focus({ preventScroll: true }); return; }
+  if (a.clearnotes) { NOTES = {}; LS.set('wps-notes', NOTES); const y = scrollY; renderTop(); scrollTo(0, y); return; }
+  if (a.signin) {
+    if (!auth) { toast('Connect Firebase first (see the README).'); return; }
+    if (USER) { signOut(auth); return; }
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(e => { if (e.code !== 'auth/popup-closed-by-user') toast('Sign-in didn’t work: ' + (e.code || e.message), 6000); });
+    return;
+  }
+  if (a.tab) { DESKTAB = a.tab; LS.set('wps-desk-tab', DESKTAB); EDITING = null; $$('.tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === DESKTAB))); renderPanel(); return; }
+  if (a.release) { t.disabled = true; releaseIds(a.release.split(',')).finally(() => { t.disabled = false; }); return; }
+  if (a.unrelease) { const upd = {}; upd['released.' + a.unrelease] = deleteField(); setPosterReleased([a.unrelease], false).then(() => pubUpdate(upd, 'Taken down from the public site.')); return; }
+  if (a.preview) { const box = $('#pv-' + a.preview); if (box.innerHTML) { box.innerHTML = ''; return; } const it = ITEMS.find(i => i.id === a.preview); previewItem(it, box); return; }
+  if (a.edit) { const c = (SEC.content.items[a.edit]) || {}; EDITING = a.edit; $('#pv-' + a.edit).innerHTML = '<div class="edit-box"><div class="field"><label for="ed-title">Heading</label><input type="text" id="ed-title" value="' + esc(c.title || '') + '"></div><div class="field"><label for="ed-body">Text (leave a blank line between paragraphs)</label><textarea id="ed-body" style="min-height:200px">' + esc(c.body || '') + '</textarea></div><div class="btnrow"><button class="btn sm" type="button" data-saveedit="' + a.edit + '">Save wording</button><button class="btn sm ghost" type="button" data-canceledit="1">Cancel</button></div><p class="muted" style="font-size:.85rem">Already released? Take it down and release it again to update the public site.</p></div>'; return; }
+  if (a.saveedit) { const upd = {}; upd['items.' + a.saveedit + '.title'] = $('#ed-title').value; upd['items.' + a.saveedit + '.body'] = $('#ed-body').value; EDITING = null; updateDoc(doc(db, 'secret', 'content'), upd).then(() => toast('Wording saved.'), e => toast('Couldn’t save: ' + (e.code || e.message))); return; }
+  if (a.canceledit) { EDITING = null; renderPanel(); return; }
+  if (a.rtab) { ROUNDTAB = a.rtab; LS.set('wps-round-tab', ROUNDTAB); renderPanel(); return; }
+  if (a.crown) { const r = ROUNDTAB, row = allRows(r).find(x => x.id === a.crown); if (!row) return; const upd = {}; upd['winners.' + r] = r === 'final' ? { cls: row.cls, story: row.story || '' } : { cls: row.cls }; pubUpdate(upd, r === 'final' ? 'Featured. It shows on the public site with “Case closed”.' : 'Winner announced on the public site.'); return; }
+  if (a.uncrown) { const upd = {}; upd['winners.' + a.uncrown] = deleteField(); pubUpdate(upd, 'Winner removed.'); return; }
+  if (a.delsub) { const row = SUBS.find(s => s.id === a.delsub); const k = row && String(row.cls || '').toLowerCase().replace(/[^a-z0-9]/g, ''); const ids = SUBS.filter(s => s.round === ROUNDTAB && String(s.cls || '').toLowerCase().replace(/[^a-z0-9]/g, '') === k).map(s => s.id); const b = writeBatch(db); ids.forEach(id => b.delete(doc(db, 'subs', id))); b.commit().then(() => toast('Removed.'), e => toast('Couldn’t remove: ' + (e.code || e.message))); return; }
+  if (a.play) { play(a.play); return; }
+  if (a.stopall) { stopAll(); return; }
+  if (a.unload) { idbDel(a.unload).then(loadPads); return; }
+  if (a.clearphoto) { PEND[a.clearphoto] = null; $('#php-' + a.clearphoto).innerHTML = iconFor(sus(a.clearphoto)); t.remove(); return; }
+  if (a.savelap) { const upd = {}; ['r2', 'r3', 'r4'].forEach(k => { const v = $('#s-tb-' + k).value; upd[k + '.tb'] = v === '' ? null : Number(v); }); updateDoc(doc(db, 'secret', 'answers'), upd).then(() => toast('Tiebreaker answers saved.'), e => toast('Couldn\u2019t save: ' + (e.code || e.message))); return; }
+  if (a.reset) {
+    if (a.reset === 'ask') { $('#resetrow').innerHTML = '<span>Take everything off the public site?</span><button class="btn sm danger" type="button" data-reset="yes">Yes, reset</button><button class="btn sm ghost" type="button" data-reset="no">Keep it</button>'; }
+    else if (a.reset === 'yes') { doReset($('#reset-subs') && $('#reset-subs').checked); }
+    else renderPanel();
+  }
+});
+async function previewItem(it, box) {
+  const c = contentFor(it.id), imgs = {};
+  for (const r of (c.riddles || [])) if (r.posterKey) { try { const s = await getDoc(doc(db, 'posters', r.posterKey)); if (s.exists()) imgs[r.posterKey] = s.data().data; } catch (e) {} }
+  box.innerHTML = '<div class="preview">' + itemCard(it, c, { noWinner: true, posterImg: imgs }) + '</div>';
+}
+async function doReset(alsoSubs) {
+  const ok = await pubUpdate({ released: {}, winners: {} }, null);
+  for (const p of POSTERS) { try { await updateDoc(doc(db, 'posters', p[0]), { released: false }); } catch (e) {} }
+  if (ok && alsoSubs) {
+    try { const q = await getDocs(collection(db, 'subs')); let b = writeBatch(db), n = 0; for (const d of q.docs) { b.delete(d.ref); if (++n % 400 === 0) { await b.commit(); b = writeBatch(db); } } await b.commit(); } catch (e) { toast('Couldn’t delete the answer sheets: ' + (e.code || e.message)); }
+  }
+  if (ok) toast('The public site is back to the start.');
+}
+function selectAll(el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+document.addEventListener('change', ev => {
+  const t = ev.target, a = t.dataset || {};
+  if (a.check) { const done = clone(SEC.check.done || {}); if (t.checked) done[a.check] = true; else delete done[a.check]; SEC.check = { done }; setDoc(doc(db, 'secret', 'checklist'), { done }).catch(() => toast('Couldn’t save the checklist.')); return; }
+  if (a.load && t.files && t.files[0]) { const f = t.files[0]; idbPut(a.load, { name: f.name, blob: f }).then(loadPads, () => toast('This browser wouldn’t store the file.')); return; }
+  if (a.photo && t.files && t.files[0]) { cropSquare(t.files[0], 360).then(d => { PEND[a.photo] = d; $('#php-' + a.photo).innerHTML = '<img src="' + d + '" alt="">'; toast('Photo ready. Press Save to show it.'); }, e => toast(e.message)); return; }
+  if (a.poster && t.files && t.files[0]) {
+    const k = a.poster, item = POSTERS.find(p => p[0] === k)[2];
+    shrink(t.files[0], 900, 0.8).then(d => setDoc(doc(db, 'posters', k), { data: d, name: t.files[0].name, released: isRel(item) }).then(() => { $('#post-' + k).innerHTML = '<img src="' + d + '" alt="">'; toast('Poster saved. It stays hidden until release.'); })).catch(e => toast('Couldn’t save the poster: ' + (e.code || e.message)));
+    return;
+  }
+  if (a.casefile && t.files && t.files[0]) { loadCaseFile(t.files[0]); return; }
+});
+async function loadCaseFile(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch (e) { toast('That file isn’t valid JSON.'); return; }
+  if (!data || !data.content || !data.content.items || !data.answers) { toast('That isn’t the Clue case file. Look for clue-casefile.json.'); return; }
+  try {
+    const b = writeBatch(db);
+    b.set(doc(db, 'secret', 'content'), data.content);
+    b.set(doc(db, 'secret', 'answers'), data.answers);
+    const ps = await getDoc(doc(db, 'public', 'state'));
+    if (!ps.exists()) b.set(doc(db, 'public', 'state'), clone(DEFAULT_PUB));
+    await b.commit();
+    toast('Case file loaded. You’re ready to run the week.', 5000);
+    renderPanel();
+  } catch (e) { toast('Couldn’t load it: ' + (e.code || e.message), 6000); }
+}
+document.addEventListener('submit', ev => {
+  const f = ev.target; ev.preventDefault();
+  if (f.id === 'subform') { onSubmit(f); return; }
+  if (f.id === 'paperform') {
+    const r = ROUNDTAB, R = ROUNDS[r], e = { round: r, cls: $('#pp-cls').value.trim(), src: 'Paper', at: serverTimestamp() };
+    if (!e.cls) return;
+    if (R.final) { e.person = $('#pp-person').value; e.place = $('#pp-place').value; e.thing = $('#pp-thing').value; e.story = $('#pp-story').value.trim(); }
+    else { R.fields.forEach(x => { e[x[0]] = $('#pp-' + x[0]).value; }); e.tb = String($('#pp-tb').value); }
+    addDoc(collection(db, 'subs'), e).then(() => toast('Sheet added.'), err => toast('Couldn’t add it: ' + (err.code || err.message)));
+    return;
+  }
+  if (f.id === 'setupform') { saveSetup(); }
+});
+async function saveSetup() {
+  const st = clone(PUB.settings);
+  const seen = {}; st.classes = $('#s-classes').value.split('\n').map(x => x.replace(/\|/g, '/').trim().slice(0, 80)).filter(x => x && !seen[x] && (seen[x] = 1));
+  st.school = $('#s-school').value.trim() || 'Our School'; st.day1 = $('#s-day1').value || st.day1;
+  st.times = { am: $('#s-am').value || '09:00', mid: $('#s-mid').value || '13:00', pm: $('#s-pm').value || '15:00' };
+  S.filter(s => s.g === 'person').forEach(s => {
+    const nm = $('#s-name-' + s.id).value.trim(); if (nm && nm !== s.name) st.names[s.id] = nm; else delete st.names[s.id];
+    const ac = $('#s-actor-' + s.id).value.trim(); if (ac) st.actors[s.id] = ac; else delete st.actors[s.id];
+  });
+  try {
+    const b = writeBatch(db);
+    b.update(doc(db, 'public', 'state'), { settings: st });
+    Object.keys(PEND).forEach(k => { if (PEND[k]) b.set(doc(db, 'photos', k), { data: PEND[k] }); else b.delete(doc(db, 'photos', k)); });
+    await b.commit(); PEND = {}; toast('Saved. The public site is updated.');
+  } catch (e) { toast('Couldn’t save: ' + (e.code || e.message), 6000); }
+}
+document.addEventListener('keydown', ev => {
+  if (VIEW !== 'desk' || DESKTAB !== 'sound') return;
+  if (/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) return;
+  if (ev.key === 'Escape') { stopAll(); return; }
+  const n = Number(ev.key); if (n >= 1 && n <= SLOTS.length) { ev.preventDefault(); play(SLOTS[n - 1][0]); }
+});
+
+/* ---------- rendering + live data ---------- */
+function render() { if (VIEW === 'desk' && CAN_EDIT) renderDesk(); else { VIEW = 'public'; renderPublic(); } }
+function refreshAfterPubChange() {
+  if (VIEW === 'desk') { if (!EDITING && (DESKTAB === 'show' || DESKTAB === 'answers')) renderPanel(); return; }
+  const y = scrollY; const nav0 = $('.nav'); if (nav0) nav0.outerHTML = nav();
+  renderTop(); renderSheet(false); scrollTo(0, y);
+  ensurePosters();
+}
+function ensurePosters() {
+  ITEMS.forEach(it => {
+    const c = PUB.released[it.id]; if (!c) return;
+    (c.riddles || []).forEach(r => {
+      if (!r.posterKey || POSTER_IMG[r.posterKey] !== undefined) return;
+      POSTER_IMG[r.posterKey] = null;
+      getDoc(doc(db, 'posters', r.posterKey)).then(s => { if (s.exists() && s.data().data) { POSTER_IMG[r.posterKey] = s.data().data; if (VIEW === 'public') { const y = scrollY; renderTop(); scrollTo(0, y); } } }).catch(() => { delete POSTER_IMG[r.posterKey]; });
+    });
+  });
+}
+function startDesk() {
+  stopDesk();
+  let pending = 3;
+  const mark = () => { if (--pending <= 0) SEC.loaded = true; if (VIEW === 'desk' && !EDITING && (DESKTAB === 'show' || DESKTAB === 'answers')) renderPanel(); };
+  DESK_UNSUBS.push(onSnapshot(doc(db, 'secret', 'content'), s => { SEC.content = s.exists() ? s.data() : null; mark(); }, mark));
+  DESK_UNSUBS.push(onSnapshot(doc(db, 'secret', 'answers'), s => { SEC.answers = s.exists() ? s.data() : null; mark(); }, mark));
+  getDoc(doc(db, 'secret', 'checklist')).then(s => { SEC.check = s.exists() ? s.data() : { done: {} }; mark(); }, mark);
+  DESK_UNSUBS.push(onSnapshot(collection(db, 'subs'), q => {
+    SUBS = q.docs.map(d => Object.assign({ id: d.id }, d.data({ serverTimestamps: 'estimate' })));
+    if (VIEW === 'desk' && DESKTAB === 'answers') renderPanel();
+  }, () => {}));
+}
+function stopDesk() { DESK_UNSUBS.forEach(u => { try { u(); } catch (e) {} }); DESK_UNSUBS = []; SEC = { content: null, answers: null, check: { done: {} }, loaded: false }; SUBS = []; }
+
+render();
+if (CONFIGURED) {
+  onSnapshot(doc(db, 'public', 'state'), s => {
+    PUB = normalize(s.exists() ? s.data() : null); PUB_LOADED = true;
+    refreshAfterPubChange();
+  }, () => { PUB_LOADED = true; refreshAfterPubChange(); });
+  onSnapshot(collection(db, 'photos'), q => {
+    PHOTOS = {}; q.forEach(d => { PHOTOS[d.id] = d.data().data; });
+    if (VIEW === 'public') { const y = scrollY; renderTop(); scrollTo(0, y); }
+  }, () => {});
+  onAuthStateChanged(auth, async u => {
+    USER = u; CAN_EDIT = false;
+    if (u && u.email) { try { const p = await getDoc(doc(db, 'producers', u.email)); CAN_EDIT = p.exists(); } catch (e) { CAN_EDIT = false; } }
+    if (CAN_EDIT) startDesk(); else { stopDesk(); if (u) toast('Signed in as ' + u.email + ', but that account isn’t a producer for this site.', 6000); }
+    if (CAN_EDIT && (location.hash === '#desk' || LS.get('wps-view', '') === 'desk')) VIEW = 'desk';
+    render();
+  });
+}
+window.addEventListener('hashchange', () => { LS.set('wps-view', location.hash === '#desk' ? 'desk' : 'public'); });
+
+</script>
 </body>
 </html>
