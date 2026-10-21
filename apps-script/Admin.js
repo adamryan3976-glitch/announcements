@@ -4,19 +4,6 @@
 
 /* ---------------- Staff access ---------------- */
 
-/** A signed-in user who isn't recognised as staff asks for access. */
-function requestStaffAccess(name) {
-  var me = whoAmI_();
-  if (!me.email) throw new Error('Please sign in with your school account first.');
-  if (me.role !== 'viewer') return { status: 'active' };
-  return withLock_(function () {
-    var row = staffRow_(me.email);
-    if (row) return { status: String(row.status) };
-    sheet_(SHEETS.staff, STAFF_COLS).appendRow([me.email, cleanText_(name, 60) || me.name, 'pending', '', new Date()]);
-    return { status: 'pending' };
-  });
-}
-
 function listStaff() {
   requireAdmin_();
   return readObjects_(SHEETS.staff).map(function (r) {
@@ -28,7 +15,7 @@ function listStaff() {
       addedAt: toDateStr_(r.addedAt)
     };
   }).sort(function (a, b) {
-    var order = { pending: 0, active: 1, removed: 2 };
+    var order = { active: 0, removed: 1 };
     return (order[a.status] - order[b.status]) || a.email.localeCompare(b.email);
   });
 }
@@ -91,7 +78,7 @@ function removeAdmin(email) {
 
 var EDITABLE_SETTINGS = [
   'siteTitle', 'schoolName', 'logoUrl', 'landAcknowledgement', 'oCanadaVideoUrl',
-  'openingSlidesUrl', 'lunchMonitorUrl', 'staffEmailPattern', 'refreshMinutes', 'maxPhotos'
+  'openingSlidesUrl', 'lunchMonitorUrl', 'lunchMonitorTab', 'staffDomain', 'studentDomain', 'refreshMinutes', 'maxPhotos'
 ];
 
 function getSettingsForAdmin() {
@@ -104,15 +91,18 @@ function getSettingsForAdmin() {
 
 function saveSettings(values) {
   requireAdmin_();
-  if (values.staffEmailPattern) {
-    try { new RegExp(values.staffEmailPattern); } catch (e) { throw new Error('The staff email pattern isn\'t a valid pattern.'); }
-  }
+  ['staffDomain', 'studentDomain'].forEach(function (k) {
+    if (!values.hasOwnProperty(k)) return;
+    values[k] = String(values[k]).toLowerCase().replace(/^@/, '').trim();
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(values[k])) throw new Error('Enter a domain like ddsb.ca.');
+  });
   ['logoUrl', 'oCanadaVideoUrl', 'openingSlidesUrl', 'lunchMonitorUrl'].forEach(function (k) {
     if (values[k]) values[k] = cleanUrl_(values[k]);
   });
   EDITABLE_SETTINGS.forEach(function (k) {
     if (values.hasOwnProperty(k)) setSetting_(k, cleanText_(values[k], 4000));
   });
+  CacheService.getScriptCache().remove('lunchWeek');
   return getSettingsForAdmin();
 }
 

@@ -22,13 +22,16 @@
         today: server.getToday() };
     },
     getToday: function (d) { return { date: d || t, isToday: !d, cycleDay: 3, trait: 'Respect: treating others the way we want to be treated.',
-      birthdays: { today: ['Ava M.', 'Liam T.'], earlier: ['Noah K.'] }, announcements: anns, staffNotes: role === 'viewer' ? [] : staffNotes }; },
+      birthdays: { today: ['Ava M.', 'Liam T.'], earlier: ['Noah K.'] }, lunch: { rooms: [
+      { room: 'Room 100 - Dodds / 102 Dubyk', duties: [{ duty: 'AM Recess', names: ['Keaton', 'Parker', 'Marcus', 'Mitch'] }, { duty: 'Lunch', names: ['Brielle', 'Hayley', 'Evalette', 'Kiera'] }, { duty: 'PM Recess', names: ['Isla', 'Harper', 'Hannah', 'Addley'] }] },
+      { room: 'Room 101 - Shepherd / 103 Murray', duties: [{ duty: 'AM Recess', names: ['Will', 'Chris', 'Jesse', 'Ozzie'] }, { duty: 'Lunch', names: ['Naia', 'Abby', 'April', 'Leah'] }, { duty: 'PM Recess', names: ['Will', 'Chris', 'Jesse', 'Ozzie'] }] },
+      { room: 'Room 111 - Kanellis', duties: [{ duty: 'AM Recess', names: ['Camryn', 'Amelia'] }, { duty: 'Lunch', names: ['Ivy', 'Waverly', 'Aydin', 'Charlotte'] }, { duty: 'PM Recess', names: ['Camryn', 'Amelia'] }] }] }, announcements: anns, staffNotes: role === 'viewer' ? [] : staffNotes }; },
     getMine: function () { return anns.concat([{ id: 'o1', title: 'Picture day', body: 'Picture day retakes.', grades: ['all'], startDate: plus(-30), endDate: plus(-30), photoIds: [] }]); },
     getArchive: function () { return server.getMine().concat(staffNotes); },
     getAnnouncement: function (id) { return anns.filter(function (a) { return a.id === id; })[0]; },
     saveAnnouncement: function () { return { saved: true, id: 'x' }; },
     getPhoto: function () { return photo; },
-    listStaff: function () { return [{ email: 'new.teacher@ddsb.ca', name: 'Ms. Singh', status: 'pending' }, { email: 'kerr@ddsb.ca', name: 'Mrs. Kerr', status: 'active' }, { email: 'beaton@ddsb.ca', name: 'Mr. Beaton', status: 'active' }]; },
+    listStaff: function () { return [{ email: 'old.teacher@ddsb.ca', name: 'Ms. Singh', status: 'removed' }, { email: 'kerr@ddsb.ca', name: 'Mrs. Kerr', status: 'active' }, { email: 'beaton@ddsb.ca', name: 'Mr. Beaton', status: 'active' }]; },
     listAdmins: function () { return { admins: ['me@ddsb.ca'], owner: 'me@ddsb.ca' }; },
     birthdayStatus: function () { return { count: 412, updated: plus(-40) }; },
     getSettingsForAdmin: function () { return server.getBootstrap().settings; },

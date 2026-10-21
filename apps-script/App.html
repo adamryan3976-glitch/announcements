@@ -155,7 +155,6 @@
     mine: { label: 'My announcements', render: renderMine, staff: true },
     all: { label: 'All announcements', render: renderArchive, staff: true },
     admin: { label: 'Admin', render: renderAdmin, admin: true },
-    access: { render: renderAccess }
   };
 
   function renderNav() {
@@ -168,7 +167,7 @@
       nav.appendChild(h('a', {
         href: '#' + key, 'aria-current': current ? 'page' : null,
         onclick: function (e) { e.preventDefault(); go(key); }
-      }, v.label, key === 'admin' && state.pendingCount ? h('span', { class: 'badge', text: state.pendingCount }) : null));
+      }, v.label));
     });
   }
 
@@ -283,11 +282,33 @@
     });
 
     var foot = h('div', { class: 'footer-note' },
-      s.lunchMonitorUrl ? h('a', { href: s.lunchMonitorUrl, target: '_blank', rel: 'noopener', text: 'Student lunchroom monitor schedule' }) : null,
-      s.openingSlidesUrl ? h('a', { href: s.openingSlidesUrl, target: '_blank', rel: 'noopener', text: 'Land Acknowledgement and O Canada slides' }) : null,
-      !isStaff() && state.me && state.me.email ? h('button', { class: 'linkish', type: 'button', onclick: function () { go('access'); } }, 'Staff? Get access to post') : null);
+      s.lunchMonitorUrl ? h('a', { href: s.lunchMonitorUrl, target: '_blank', rel: 'noopener', text: 'Full lunchroom monitor schedule' }) : null,
+      s.openingSlidesUrl ? h('a', { href: s.openingSlidesUrl, target: '_blank', rel: 'noopener', text: 'Land Acknowledgement and O Canada slides' }) : null);
 
-    append(view, [dayline, strip.childNodes.length ? strip : null, filter, board, foot]);
+    append(view, [dayline, strip.childNodes.length ? strip : null, monitorsSection(t.lunch), filter, board, foot]);
+  }
+
+  /* ---------- Lunchroom monitors (from the principal's sheet) ---------- */
+  function hasMonitors(lunch) { return !!(lunch && lunch.rooms && lunch.rooms.length); }
+
+  function monitorsSection(lunch) {
+    if (!lunch) return null;
+    var head = h('h2', { text: 'Lunchroom monitors' });
+    if (lunch.error || lunch.unavailable) {
+      return h('section', { class: 'monitors', 'aria-label': 'Lunchroom monitors' }, head,
+        h('p', { class: 'notice', text: lunch.error
+          ? 'Today’s lunchroom schedule couldn’t load. ' + lunch.error
+          : 'Today’s lunchroom schedule isn’t available right now. Check with your teacher.' }));
+    }
+    if (!hasMonitors(lunch)) return null;
+    return h('section', { class: 'monitors', 'aria-label': 'Lunchroom monitors' }, head,
+      h('div', { class: 'rooms' }, lunch.rooms.map(function (r) {
+        return h('article', { class: 'room' },
+          h('h3', { text: r.room }),
+          h('dl', null, r.duties.map(function (d) {
+            return [h('dt', { text: d.duty }), h('dd', { text: d.names.join(', ') })];
+          })));
+      })));
   }
 
   function loadToday(date) {
@@ -338,6 +359,21 @@
           t.trait ? h('div', { text: t.trait }) : null,
           names.length ? h('div', null, h('b', { text: 'Happy birthday: ' }), names.join(', ')) : null));
     });
+
+    if (hasMonitors(t.lunch)) {
+      slides.push(function () {
+        return h('div', { class: 'slide slide-monitors' },
+          h('div', { class: 'slide-kicker', text: 'Where to go today' }),
+          h('h2', { text: 'Lunchroom monitors' }),
+          h('div', { class: 'slide-rooms' }, t.lunch.rooms.map(function (r) {
+            return h('div', { class: 'slide-room' },
+              h('h3', { text: r.room }),
+              r.duties.map(function (d) {
+                return h('p', null, h('b', { text: d.duty + ': ' }), d.names.join(', '));
+              }));
+          })));
+      });
+    }
 
     var seen = {};
     groupedAnnouncements(t, state.filter).forEach(function (g) {
@@ -801,33 +837,10 @@
   }
 
   /* =========================================================
-   * Request staff access (for people the site doesn't recognise yet)
-   * ========================================================= */
-  function renderAccess() {
-    view.appendChild(pageHead('Get access to post', 'Staff can post and manage announcements. An admin approves each request.'));
-    var me = state.me;
-    var box = h('div', { class: 'panel', style: 'max-width:560px' });
-    view.appendChild(box);
-    if (me.pending) {
-      box.appendChild(h('p', { text: 'Your request is waiting for an admin. You’ll be able to post as soon as it’s approved.' }));
-      return;
-    }
-    var name = h('input', { type: 'text', id: 'acc-name', placeholder: 'e.g. Ms. Paulino', maxlength: 60 });
-    var btn = h('button', { type: 'button', class: 'btn primary', onclick: function () {
-      btn.disabled = true;
-      api('requestStaffAccess', name.value).then(function () {
-        state.me.pending = true; clear(view); renderAccess(); toast('Request sent');
-      }).catch(function (err) { btn.disabled = false; toast(err.message); });
-    } }, 'Request access');
-    append(box, [h('p', { text: 'Signed in as ' + me.email }),
-      h('div', { class: 'field' }, h('label', { for: 'acc-name' }, 'Your name as students know you'), name), h('div', null, btn)]);
-  }
-
-  /* =========================================================
    * Admin
    * ========================================================= */
   function renderAdmin() {
-    view.appendChild(pageHead('Admin', 'Manage who can post, birthdays and site settings.'));
+    view.appendChild(pageHead('Admin', 'Staff, admins, birthdays and site settings.'));
     var tabs = h('div', { class: 'tabs', role: 'tablist' });
     var body = h('div');
     var TABS = [['staff', 'Staff'], ['admins', 'Admins'], ['birthdays', 'Birthdays'], ['settings', 'Settings'], ['legacy', 'Old Google Form']];
@@ -849,39 +862,21 @@
   }
   function drawStaff(body, list) {
     clear(body);
-    state.pendingCount = list.filter(function (s) { return s.status === 'pending'; }).length;
-    renderNav();
     var update = function (p) { p.then(function (l) { drawStaff(body, l); toast('Saved'); }).catch(function (err) { toast(err.message); }); };
-    var pending = list.filter(function (s) { return s.status === 'pending'; });
-    if (pending.length) {
-      body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Waiting for approval' }),
-        h('div', { class: 'list' }, pending.map(function (s) {
-          return h('div', { class: 'item' },
-            h('div', null, h('p', { class: 'item-title', text: s.name || s.email }), h('div', { class: 'item-meta', text: s.email })),
-            h('div', { class: 'item-actions' },
-              h('button', { class: 'btn small primary', type: 'button', onclick: function () { update(api('setStaffStatus', s.email, 'active')); } }, 'Approve'),
-              h('button', { class: 'btn small', type: 'button', onclick: function () { update(api('setStaffStatus', s.email, 'removed')); } }, 'Decline')));
-        }))));
-    }
-    var email = h('input', { type: 'email', placeholder: 'name@ddsb.ca', 'aria-label': 'Email' });
-    var name = h('input', { type: 'text', placeholder: 'Name, e.g. Mr. Levac', 'aria-label': 'Name' });
-    body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Add a staff member' }),
-      h('p', { class: 'hint', text: 'Staff can post announcements and edit their own.' }),
-      h('div', { class: 'inline-form' }, email, name,
-        h('button', { class: 'btn primary', type: 'button', onclick: function () { update(api('addStaff', email.value, name.value)); } }, 'Add'))));
     var active = list.filter(function (s) { return s.status === 'active'; });
-    body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Staff who can post (' + active.length + ')' }),
-      h('table', { class: 'simple' },
+    var removed = list.filter(function (s) { return s.status === 'removed'; });
+    body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Staff who have posted (' + active.length + ')' }),
+      h('p', { class: 'hint', text: 'Everyone signed in with an @' + (state.staffDomain || 'ddsb.ca') + ' account can post. Students (@' + (state.studentDomain || 'ddsbstudent.ca') + ') only see Today. Remove someone here to stop them posting; their announcements stay up.' }),
+      active.length ? h('table', { class: 'simple' },
         h('thead', null, h('tr', null, h('th', { text: 'Name' }), h('th', { text: 'Email' }), h('th', { text: '' }))),
         h('tbody', null, active.map(function (s) {
           return h('tr', null, h('td', { text: s.name }), h('td', { text: s.email }),
             h('td', null, h('button', { class: 'btn small danger', type: 'button', onclick: function () {
-              if (window.confirm('Remove ' + (s.name || s.email) + '? Their announcements stay up.')) update(api('setStaffStatus', s.email, 'removed'));
+              if (window.confirm('Stop ' + (s.name || s.email) + ' from posting? Their announcements stay up.')) update(api('setStaffStatus', s.email, 'removed'));
             } }, 'Remove')));
-        })))));
-    var removed = list.filter(function (s) { return s.status === 'removed'; });
+        }))) : h('p', { class: 'empty', text: 'No one has posted yet.' })));
     if (removed.length) {
-      body.appendChild(h('details', { class: 'panel' }, h('summary', { text: 'Removed (' + removed.length + ')' }),
+      body.appendChild(h('div', { class: 'panel' }, h('h2', { text: 'Removed from posting (' + removed.length + ')' }),
         h('div', { class: 'list' }, removed.map(function (s) {
           return h('div', { class: 'item' }, h('div', { text: (s.name ? s.name + ' — ' : '') + s.email }),
             h('button', { class: 'btn small', type: 'button', onclick: function () { update(api('setStaffStatus', s.email, 'active')); } }, 'Restore'));
@@ -963,8 +958,10 @@
     ['landAcknowledgement', 'Land Acknowledgement', 'textarea', 'Shown on the opening slide in Present mode. Leave blank to use the slides link instead.'],
     ['oCanadaVideoUrl', 'O Canada video', 'url', 'YouTube or Drive link played on the opening slide.'],
     ['openingSlidesUrl', 'Opening slides link', 'url', 'The existing Land Acknowledgement and O Canada slides.'],
-    ['lunchMonitorUrl', 'Lunchroom monitor schedule', 'url', 'The principal’s sheet, linked under Today.'],
-    ['staffEmailPattern', 'Treat these emails as staff', 'text', 'Optional. A pattern such as ^[a-z]+\\d{4}@ddsb\\.ca$ lets matching staff post without being added one by one. Leave blank to approve staff by hand.'],
+    ['lunchMonitorUrl', 'Lunchroom monitor schedule', 'url', 'The principal’s sheet. Today’s monitors are shown on Today and in Present mode. The account that deployed the site needs view access.'],
+    ['lunchMonitorTab', 'Lunchroom sheet tab', 'text', 'The tab with Monday–Friday across the top and one row per room. Normally Input.'],
+    ['staffDomain', 'Staff email domain', 'text', 'Accounts ending in this can post. Normally ddsb.ca.'],
+    ['studentDomain', 'Student email domain', 'text', 'Accounts ending in this see Today only. Normally ddsbstudent.ca.'],
     ['refreshMinutes', 'Refresh Today every (minutes)', 'text', ''],
     ['maxPhotos', 'Photos per announcement', 'text', '']
   ];
@@ -1041,9 +1038,6 @@
       };
       if (window.google && google.script && google.script.url) google.script.url.getLocation(function (loc) { go1(loc.hash); });
       else go1(location.hash);
-      if (isAdmin()) api('listStaff').then(function (l) {
-        state.pendingCount = l.filter(function (s) { return s.status === 'pending'; }).length; renderNav();
-      }).catch(function () {});
       scheduleRefresh();
     }).catch(function (err) {
       clear(view).appendChild(h('p', { class: 'error', text: 'The announcements couldn’t load: ' + err.message }));
