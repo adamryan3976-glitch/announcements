@@ -50,6 +50,7 @@ var SETTING_DEFAULTS = {
   landAcknowledgement: '',
   oCanadaVideoUrl: '',
   openingSlidesUrl: 'https://docs.google.com/presentation/d/1Lqx9RY1sD-BVpJ2YF116hvLJPAls3pqaVOrp7pr6FJw/present',
+  lunchMonitorTab: 'Input',
   lunchMonitorUrl: 'https://docs.google.com/spreadsheets/d/1i5qAMYkGx1_jPN5yLYWzYxU0JOQrd4XnTdT_dDZ-wps/edit',
   refreshMinutes: '5',
   maxPhotos: '4'

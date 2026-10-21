@@ -75,6 +75,12 @@ clasp push
 ```
 Then Deploy → Manage deployments → edit the existing deployment → Version: New version. This keeps the same URL.
 
+## Lunchroom monitors
+Today and Present mode show the day's student lunchroom monitors: each room, and who is on AM recess, lunch and PM recess duty. The data is read straight from the principal's **STUDENT LUNCHROOM MONITOR SCHEDULE** sheet (the `Input` tab), so it keeps being edited there as now. Changes show on the site within about 5 minutes.
+- **Sheet layout:** Monday–Friday across one row, one row per room below it, column A naming the room. In each cell, one student per line, with the duty in brackets: `Keaton (AM Recess)`, `Ivy (AM/PM Recess)`, `Nathan (Lunch)`.
+- **Settings:** the sheet link and tab name are in Admin → Settings. The account that deployed the web app needs at least view access to the sheet.
+- **If it can't load,** staff see the reason on Today. Students see a message to check with their teacher.
+
 ## Birthdays
 Export the class list from the LMS as Excel, including student name and birth date columns. Then go to Admin → Birthdays → choose the file → **Check the file**. Look over the preview, then click **Replace the birthday list**. Name columns are found automatically: "First name", "Last name", "Preferred name", "Student name", "Birth date", "DOB" and similar (a preferred name is used when there is one). Birthdays on weekends or other days without a cycle day show on the next school day.
 

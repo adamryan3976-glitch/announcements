@@ -78,7 +78,7 @@ function removeAdmin(email) {
 
 var EDITABLE_SETTINGS = [
   'siteTitle', 'schoolName', 'logoUrl', 'landAcknowledgement', 'oCanadaVideoUrl',
-  'openingSlidesUrl', 'lunchMonitorUrl', 'staffDomain', 'studentDomain', 'refreshMinutes', 'maxPhotos'
+  'openingSlidesUrl', 'lunchMonitorUrl', 'lunchMonitorTab', 'staffDomain', 'studentDomain', 'refreshMinutes', 'maxPhotos'
 ];
 
 function getSettingsForAdmin() {
@@ -102,6 +102,7 @@ function saveSettings(values) {
   EDITABLE_SETTINGS.forEach(function (k) {
     if (values.hasOwnProperty(k)) setSetting_(k, cleanText_(values[k], 4000));
   });
+  CacheService.getScriptCache().remove('lunchWeek');
   return getSettingsForAdmin();
 }
 

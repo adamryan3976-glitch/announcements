@@ -154,6 +154,19 @@ function birthdaysFor_(dateStr) {
   return { today: today.sort(), earlier: earlier.sort() };
 }
 
+/** Lunchroom monitors for a school day. Only staff see why it failed to load. */
+function todayLunch_(date, isStaff) {
+  var cycle = cycleMap_();
+  var wd = weekday_(date);
+  if (wd === 0 || wd === 6 || (cycle.hasOwnProperty(date) && cycle[date] === '')) return { rooms: [] };
+  var lunch = lunchMonitorsFor_(date);
+  if (lunch.error) {
+    console.warn(lunch.error);
+    if (!isStaff) return { rooms: [], unavailable: true };
+  }
+  return lunch;
+}
+
 /* ------------------------------------------------------------------ */
 /* Public entry points (called from the page with google.script.run)   */
 /* ------------------------------------------------------------------ */
@@ -195,6 +208,7 @@ function getToday(dateStr) {
     cycleDay: cycleMap_()[date] || '',
     trait: characterTrait_(date),
     birthdays: birthdaysFor_(date),
+    lunch: todayLunch_(date, isStaff),
     announcements: forStudents,
     staffNotes: staffNotes
   };

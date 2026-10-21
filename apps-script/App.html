@@ -282,10 +282,33 @@
     });
 
     var foot = h('div', { class: 'footer-note' },
-      s.lunchMonitorUrl ? h('a', { href: s.lunchMonitorUrl, target: '_blank', rel: 'noopener', text: 'Student lunchroom monitor schedule' }) : null,
+      s.lunchMonitorUrl ? h('a', { href: s.lunchMonitorUrl, target: '_blank', rel: 'noopener', text: 'Full lunchroom monitor schedule' }) : null,
       s.openingSlidesUrl ? h('a', { href: s.openingSlidesUrl, target: '_blank', rel: 'noopener', text: 'Land Acknowledgement and O Canada slides' }) : null);
 
-    append(view, [dayline, strip.childNodes.length ? strip : null, filter, board, foot]);
+    append(view, [dayline, strip.childNodes.length ? strip : null, monitorsSection(t.lunch), filter, board, foot]);
+  }
+
+  /* ---------- Lunchroom monitors (from the principal's sheet) ---------- */
+  function hasMonitors(lunch) { return !!(lunch && lunch.rooms && lunch.rooms.length); }
+
+  function monitorsSection(lunch) {
+    if (!lunch) return null;
+    var head = h('h2', { text: 'Lunchroom monitors' });
+    if (lunch.error || lunch.unavailable) {
+      return h('section', { class: 'monitors', 'aria-label': 'Lunchroom monitors' }, head,
+        h('p', { class: 'notice', text: lunch.error
+          ? 'Today’s lunchroom schedule couldn’t load. ' + lunch.error
+          : 'Today’s lunchroom schedule isn’t available right now. Check with your teacher.' }));
+    }
+    if (!hasMonitors(lunch)) return null;
+    return h('section', { class: 'monitors', 'aria-label': 'Lunchroom monitors' }, head,
+      h('div', { class: 'rooms' }, lunch.rooms.map(function (r) {
+        return h('article', { class: 'room' },
+          h('h3', { text: r.room }),
+          h('dl', null, r.duties.map(function (d) {
+            return [h('dt', { text: d.duty }), h('dd', { text: d.names.join(', ') })];
+          })));
+      })));
   }
 
   function loadToday(date) {
@@ -336,6 +359,21 @@
           t.trait ? h('div', { text: t.trait }) : null,
           names.length ? h('div', null, h('b', { text: 'Happy birthday: ' }), names.join(', ')) : null));
     });
+
+    if (hasMonitors(t.lunch)) {
+      slides.push(function () {
+        return h('div', { class: 'slide slide-monitors' },
+          h('div', { class: 'slide-kicker', text: 'Where to go today' }),
+          h('h2', { text: 'Lunchroom monitors' }),
+          h('div', { class: 'slide-rooms' }, t.lunch.rooms.map(function (r) {
+            return h('div', { class: 'slide-room' },
+              h('h3', { text: r.room }),
+              r.duties.map(function (d) {
+                return h('p', null, h('b', { text: d.duty + ': ' }), d.names.join(', '));
+              }));
+          })));
+      });
+    }
 
     var seen = {};
     groupedAnnouncements(t, state.filter).forEach(function (g) {
@@ -920,7 +958,8 @@
     ['landAcknowledgement', 'Land Acknowledgement', 'textarea', 'Shown on the opening slide in Present mode. Leave blank to use the slides link instead.'],
     ['oCanadaVideoUrl', 'O Canada video', 'url', 'YouTube or Drive link played on the opening slide.'],
     ['openingSlidesUrl', 'Opening slides link', 'url', 'The existing Land Acknowledgement and O Canada slides.'],
-    ['lunchMonitorUrl', 'Lunchroom monitor schedule', 'url', 'The principal’s sheet, linked under Today.'],
+    ['lunchMonitorUrl', 'Lunchroom monitor schedule', 'url', 'The principal’s sheet. Today’s monitors are shown on Today and in Present mode. The account that deployed the site needs view access.'],
+    ['lunchMonitorTab', 'Lunchroom sheet tab', 'text', 'The tab with Monday–Friday across the top and one row per room. Normally Input.'],
     ['staffDomain', 'Staff email domain', 'text', 'Accounts ending in this can post. Normally ddsb.ca.'],
     ['studentDomain', 'Student email domain', 'text', 'Accounts ending in this see Today only. Normally ddsbstudent.ca.'],
     ['refreshMinutes', 'Refresh Today every (minutes)', 'text', ''],
