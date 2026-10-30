@@ -41,19 +41,14 @@ function setupSheet() {
   });
   report.push('Staff tab ready (' + seeded + ' staff added from past form submissions).');
 
-  // 4. Cycle Days: show the day numbers as numbers, not dates.
+  // 4. Cycle Days: show the day numbers as numbers, not dates. Only the
+  //    display format changes. The tab is filled by a formula in A1, so
+  //    writing values into it would block the formula (#REF!).
   var cycle = ss.getSheetByName(SHEETS.cycleDays);
   if (cycle && cycle.getLastRow() > 1) {
-    var range = cycle.getRange(2, 2, cycle.getLastRow() - 1, 1);
-    // Only change cells that hold a day number; leave anything else as it is.
-    var fixed = range.getValues().map(function (r) {
-      var n = cycleNumber_(r[0]);
-      return [n ? Number(n) : r[0]];
-    });
-    range.setValues(fixed);
-    fixed.forEach(function (r, i) { if (typeof r[0] === 'number') range.getCell(i + 1, 1).setNumberFormat('0'); });
+    cycle.getRange(2, 2, cycle.getMaxRows() - 1, 1).setNumberFormat('0');
     CacheService.getScriptCache().remove('cycle');
-    report.push('Cycle Days fixed to show 1–5.');
+    report.push('Cycle Days set to show 1–5.');
   }
 
   // 5. Birthdays: move to month + day only.
