@@ -15,7 +15,8 @@ function setupSheet() {
     var idx = ANN_COLS.indexOf(c) + 1;
     ann.getRange(2, idx, ann.getMaxRows() - 1, 1).setNumberFormat('@');
   });
-  report.push('Announcements tab ready.');
+  var fixedGrades = repairGradeDates_(ann);
+  report.push('Announcements tab ready.' + (fixedGrades ? ' Fixed ' + fixedGrades + ' grade groups that had turned into dates.' : ''));
 
   // 2. Settings tab with defaults; the owner is the first admin.
   var settingsSheet = sheet_(SHEETS.settings, ['key', 'value']);
@@ -66,6 +67,24 @@ function setupSheet() {
 
   try { SpreadsheetApp.getUi().alert(report.join('\n')); } catch (e) { Logger.log(report.join('\n')); }
   return report;
+}
+
+/** Turns grade cells that Sheets changed into dates (4-6 → April 6) back into text. */
+function repairGradeDates_(sh) {
+  if (sh.getLastRow() < 2) return 0;
+  var header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  var i = header.indexOf('grades');
+  if (i === -1) return 0;
+  var range = sh.getRange(2, i + 1, sh.getLastRow() - 1, 1);
+  var values = range.getValues(), fixed = 0;
+  values.forEach(function (row) {
+    if (Object.prototype.toString.call(row[0]) === '[object Date]') {
+      row[0] = normalizeGrades_(row[0]).join(',') || 'all';
+      fixed++;
+    }
+  });
+  if (fixed) range.setNumberFormat('@').setValues(values);
+  return fixed;
 }
 
 /** Adds any missing header columns at the end. */

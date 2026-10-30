@@ -331,7 +331,7 @@ function importLegacy_() {
       out.push(header.map(function (k) { return obj.hasOwnProperty(k) ? obj[k] : ''; }));
       already[key] = true;
     }
-    if (out.length) sh.getRange(sh.getLastRow() + 1, 1, out.length, header.length).setValues(out);
+    writeAnnRows_(sh, header, out, sh.getLastRow() + 1);
     return { imported: out.length, skipped: skipped, repaired: repaired };
   });
 }
