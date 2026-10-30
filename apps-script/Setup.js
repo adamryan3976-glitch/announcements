@@ -81,9 +81,9 @@ function ensureColumns_(sh, cols) {
 
 /** Distinct email + most recent name from the old Google Form tab. */
 function legacyAuthors_() {
-  var src = ss_().getSheetByName(SHEETS.legacyForm);
-  if (!src || src.getLastRow() < 2) return [];
-  var values = src.getRange(1, 1, src.getLastRow(), src.getLastColumn()).getValues();
+  var values;
+  try { values = legacyTable_(); } catch (e) { return []; }
+  if (values.length < 2) return [];
   var h = values[0].map(function (x) { return String(x).toLowerCase(); });
   var cEmail = h.findIndex(function (x) { return x.indexOf('email') !== -1; });
   var cName = h.findIndex(function (x) { return x.indexOf('name') !== -1; });

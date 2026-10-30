@@ -993,9 +993,21 @@
     api('legacySyncStatus').then(function (st) {
       clear(body);
       var out = h('p');
+      var link = h('input', { type: 'url', id: 'legacy-url', value: st.formUrl || '', placeholder: 'https://docs.google.com/forms/d/…/edit' });
+      var saveLink = h('button', { class: 'btn', type: 'button', onclick: function () {
+        saveLink.disabled = true;
+        api('setLegacyForm', link.value).then(function () { toast('Form saved'); adminLegacy(body); })
+          .catch(function (err) { saveLink.disabled = false; toast(err.message); });
+      } }, 'Use this form');
       append(body, h('div', { class: 'panel' },
         h('h2', { text: 'Old Google Form' }),
         h('p', { text: 'While staff are still using the old form, its responses can be copied into this site. Already-copied responses are skipped.' }),
+        h('div', { class: 'field' },
+          h('label', { for: 'legacy-url', text: 'Form to copy from' }),
+          h('span', { class: 'hint', text: 'Open the form for editing and paste the address from the browser. Share links (forms.gle) won’t work. Leave blank to use the “Form Responses 2” tab of the sheet.' }),
+          h('div', { class: 'inline-form', style: 'grid-template-columns:1fr auto' }, link, saveLink)),
+        h('p', { class: 'hint', text: 'Copying from ' + st.source + '.' }),
+        st.problem ? h('p', { class: 'error', text: st.problem }) : null,
         h('div', { class: 'checks' },
           h('button', { class: 'btn primary', type: 'button', onclick: function () {
             api('importLegacy').then(function (r) { out.textContent = 'Copied ' + r.imported + ' new announcements.'; loadToday(); }).catch(function (err) { toast(err.message); });

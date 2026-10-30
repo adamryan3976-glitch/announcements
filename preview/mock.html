@@ -35,7 +35,7 @@
     listAdmins: function () { return { admins: ['me@ddsb.ca'], owner: 'me@ddsb.ca' }; },
     birthdayStatus: function () { return { count: 412, updated: plus(-40) }; },
     getSettingsForAdmin: function () { return server.getBootstrap().settings; },
-    legacySyncStatus: function () { return { installed: true }; }
+    legacySyncStatus: function () { return { installed: true, formUrl: '', source: 'the "Form Responses 2" tab of this spreadsheet' }; }
   };
   function runner(ok, fail) {
     return new Proxy({}, { get: function (_, name) {

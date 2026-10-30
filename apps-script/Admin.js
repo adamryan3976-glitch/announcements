@@ -289,11 +289,60 @@ function importLegacy() {
   return importLegacy_();
 }
 
-function importLegacy_() {
+/** The edit ID of the form in Settings "legacyFormUrl", or ''. */
+function legacyFormId_(link) {
+  var url = String(link === undefined ? settings_().legacyFormUrl || '' : link).trim();
+  if (!url) return '';
+  if (/forms\.gle\/|\/forms\/d\/e\//.test(url)) {
+    throw new Error('That is the form’s share link. Open the form for editing and copy the address from the browser instead (it looks like docs.google.com/forms/d/…/edit).');
+  }
+  var m = url.match(/\/forms\/d\/([\w-]{20,})/);
+  if (m) return m[1];
+  if (/^[\w-]{20,}$/.test(url)) return url;
+  throw new Error('The old Google Form link in Settings isn’t a Google Form edit link.');
+}
+
+/**
+ * The old form's responses as a table: a header row, then one row per
+ * response. Read straight from the form when Settings has a form link,
+ * otherwise from the response tab in this spreadsheet.
+ */
+function legacyTable_() {
+  var formId = legacyFormId_();
+  if (formId) {
+    var form;
+    try { form = FormApp.openById(formId); }
+    catch (e) { throw new Error('The old Google Form couldn’t be opened. The account that deployed this site must be an editor of the form.'); }
+    var items = form.getItems().filter(function (it) {
+      var t = it.getType();
+      return t !== FormApp.ItemType.SECTION_HEADER && t !== FormApp.ItemType.PAGE_BREAK &&
+             t !== FormApp.ItemType.IMAGE && t !== FormApp.ItemType.VIDEO;
+    });
+    var header = ['Timestamp', 'Email Address'].concat(items.map(function (it) { return it.getTitle(); }));
+    var rows = form.getResponses().map(function (resp) {
+      var ts = resp.getTimestamp();
+      ts = new Date(Math.floor(ts.getTime() / 1000) * 1000); // match the seconds-only times in the sheet
+      var byId = {};
+      resp.getItemResponses().forEach(function (ir) {
+        var v = ir.getResponse();
+        byId[ir.getItem().getId()] = Array.isArray(v) ? v.join(', ') : v;
+      });
+      return [ts, resp.getRespondentEmail() || ''].concat(items.map(function (it) {
+        var v = byId[it.getId()];
+        return v === undefined || v === null ? '' : v;
+      }));
+    });
+    return [header].concat(rows);
+  }
   var src = ss_().getSheetByName(SHEETS.legacyForm);
-  if (!src || src.getLastRow() < 2) return { imported: 0, skipped: 0 };
+  if (!src || src.getLastRow() < 2) return [];
+  return src.getRange(1, 1, src.getLastRow(), src.getLastColumn()).getValues();
+}
+
+function importLegacy_() {
+  var values = legacyTable_();
+  if (values.length < 2) return { imported: 0, skipped: 0 };
   return withLock_(function () {
-    var values = src.getRange(1, 1, src.getLastRow(), src.getLastColumn()).getValues();
     var h = values[0].map(function (x) { return String(x).toLowerCase(); });
     var col = function (word) { for (var i = 0; i < h.length; i++) if (h[i].indexOf(word) !== -1) return i; return -1; };
     var cTime = col('timestamp'), cEmail = col('email'), cName = col('name'),
@@ -301,7 +350,7 @@ function importLegacy_() {
     if (cStart === -1) cStart = col('start');
     if (cEnd === -1) cEnd = col('end');
     var cText = legacyTextColumn_(values, h, [cTime, cEmail, cName, cStart, cEnd, cCat]);
-    if (cTime === -1 || cText === -1 || cStart === -1) throw new Error('The form response tab doesn\'t have the expected columns.');
+    if (cTime === -1 || cText === -1 || cStart === -1) throw new Error('The old form doesn\'t have the expected questions (announcement text and a first date).');
 
     var sh = annSheet_();
     var header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
@@ -399,8 +448,13 @@ function onLegacyFormSubmit() {
 
 function installLegacyFormSync() {
   requireAdmin_();
-  var exists = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'onLegacyFormSubmit'; });
-  if (!exists) ScriptApp.newTrigger('onLegacyFormSubmit').forSpreadsheet(ss_()).onFormSubmit().create();
+  // Replace any existing trigger, so switching forms moves the trigger too.
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'onLegacyFormSubmit') ScriptApp.deleteTrigger(t);
+  });
+  var formId = legacyFormId_();
+  if (formId) ScriptApp.newTrigger('onLegacyFormSubmit').forForm(FormApp.openById(formId)).onFormSubmit().create();
+  else ScriptApp.newTrigger('onLegacyFormSubmit').forSpreadsheet(ss_()).onFormSubmit().create();
   return { installed: true };
 }
 
@@ -414,5 +468,32 @@ function removeLegacyFormSync() {
 
 function legacySyncStatus() {
   requireAdmin_();
-  return { installed: ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'onLegacyFormSubmit'; }) };
+  var out = {
+    installed: ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'onLegacyFormSubmit'; }),
+    formUrl: settings_().legacyFormUrl || '',
+    source: 'the "' + SHEETS.legacyForm + '" tab of this spreadsheet'
+  };
+  try {
+    var id = legacyFormId_();
+    if (id) {
+      var form = FormApp.openById(id);
+      out.source = 'the Google Form “' + form.getTitle() + '” (' + form.getResponses().length + ' responses)';
+    }
+  } catch (e) { out.problem = e.message; }
+  return out;
+}
+
+/** Saves the old form's link, then re-points automatic copying if it was on. */
+function setLegacyForm(url) {
+  requireAdmin_();
+  url = cleanText_(url, 500);
+  var id = legacyFormId_(url); // a clear message for a share link
+  if (id) {
+    try { FormApp.openById(id); }
+    catch (e) { throw new Error('That form couldn’t be opened. The account that deployed this site must be an editor of the form.'); }
+  }
+  var wasOn = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'onLegacyFormSubmit'; });
+  setSetting_('legacyFormUrl', url);
+  if (wasOn) installLegacyFormSync();
+  return legacySyncStatus();
 }
