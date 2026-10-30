@@ -6,7 +6,46 @@ var GRADE_CODES = GRADES.map(function (g) { return g.code; });
 var DAY_CODES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function annSheet_() {
-  return sheet_(SHEETS.announcements, ANN_COLS);
+  var sh = sheet_(SHEETS.announcements, ANN_COLS);
+  textFormatAnnColumns_(sh);
+  return sh;
+}
+
+/**
+ * Google Sheets turns typed text like "4-6" into a date (April 6), so the
+ * columns that hold codes, dates and words are kept as plain text.
+ * Checked at most every 6 hours.
+ */
+var ANN_TEXT_COLS = ['authorName', 'title', 'body', 'grades', 'startDate', 'endDate', 'daysOfWeek',
+                     'linkUrl', 'linkLabel', 'videoUrl', 'photoIds', 'legacyKey'];
+function textFormatAnnColumns_(sh) {
+  var cache = CacheService.getScriptCache();
+  if (cache.get('annTextCols')) return;
+  var header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  ANN_TEXT_COLS.forEach(function (c) {
+    var i = header.indexOf(c);
+    if (i !== -1) sh.getRange(2, i + 1, Math.max(1, sh.getMaxRows() - 1), 1).setNumberFormat('@');
+  });
+  cache.put('annTextCols', '1', 21600);
+}
+
+/**
+ * Writes rows to the Announcements tab starting at startRow, making room
+ * and marking the text columns as text first so nothing is reinterpreted.
+ */
+function writeAnnRows_(sh, header, rows, startRow) {
+  if (!rows.length) return;
+  var lastNeeded = startRow + rows.length - 1;
+  if (lastNeeded > sh.getMaxRows()) sh.insertRowsAfter(sh.getMaxRows(), lastNeeded - sh.getMaxRows() + 100);
+  header.forEach(function (c, i) {
+    if (ANN_TEXT_COLS.indexOf(String(c)) !== -1) sh.getRange(startRow, i + 1, rows.length, 1).setNumberFormat('@');
+  });
+  sh.getRange(startRow, 1, rows.length, header.length).setValues(rows);
+}
+
+/** "4-6" that Sheets stored as April 6 → '4-6'. */
+function gradeFromDate_(v) {
+  return Utilities.formatDate(v, TZ, 'M-d');
 }
 
 /** Converts an Announcements row object into a clean client object. */
@@ -39,6 +78,7 @@ function toAnn_(r) {
 
 /** Accepts '4-6, 7-8', 'All Grades', ['all'] … and returns ordered grade codes. */
 function normalizeGrades_(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]') v = gradeFromDate_(v);
   var parts = Array.isArray(v) ? v : String(v || '').split(',');
   var codes = [];
   parts.forEach(function (p) {
@@ -303,12 +343,12 @@ function saveAnnouncement(input, opts) {
         var v = rowValues[h];
         return (v === null || v === undefined) ? current[i] : v;
       });
-      range.setValues([next]);
+      writeAnnRows_(sh, header, [next], existing.row);
     } else {
-      sh.appendRow(header.map(function (h) {
+      writeAnnRows_(sh, header, [header.map(function (h) {
         var v = rowValues[h];
         return (v === null || v === undefined) ? '' : v;
-      }));
+      })], sh.getLastRow() + 1);
     }
     rememberName_(me, rowValues.authorName);
     return { saved: true, id: rowValues.id };
